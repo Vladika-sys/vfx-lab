@@ -58,3 +58,12 @@ ARToolKit / artoolkit5-js
 https://github.com/AR-js-org/artoolkit5-js
 The full license, including LGPLv3, GPLv3 and the static-linking exception,
 is included in assets/ar/ARTOOLKIT_LICENSE.txt. The library is unmodified.
+
+MediaPipe Tasks Vision 1.1.0
+Copyright 2026 The MediaPipe Authors.
+https://github.com/google-ai-edge/mediapipe
+Apache License 2.0: the full text is in assets/ar/MEDIAPIPE_LICENSE.txt.
+MagicTouch v2 model documentation:
+https://developers.google.com/edge/mediapipe/solutions/vision/interactive_segmenter
+The runtime WASM and model are fetched from pinned official/CDN URLs;
+the user's images are processed locally and are not uploaded.
