@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#202322" />
+  <title>VFX</title>
+  <script type="module" crossorigin src="./assets/index-CppW_QZL.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DBUCSeeq.css">
+</head>
+<body>
+  <main id="viewport">
+    <canvas id="stage" aria-label="Scenă 3D. Trage pentru rotire și folosește rotița pentru apropiere."></canvas>
+  </main>
+  <nav class="controls" aria-label="Comenzi pentru efecte">
+    <select id="effect-select" aria-label="Alege efectul"></select>
+    <label class="slider" title="Vânt">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h12a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h6a2 2 0 1 1-2 2"/></svg>
+      <input id="primary-control" type="range" min="0" max="100" value="54" aria-label="Vânt" />
+    </label>
+    <label class="slider" title="Intensitate">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V12M12 18V6M20 18V3"/></svg>
+      <input id="intensity-control" type="range" min="0" max="100" value="72" aria-label="Intensitate" />
+    </label>
+    <div class="buttons">
+      <button id="toggle-animation" type="button" title="Pauză" aria-label="Pauză" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button>
+      <button id="toggle-effect" type="button" title="Ascunde efectul" aria-label="Ascunde efectul" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button id="reset-view" type="button" title="Resetează camera" aria-label="Resetează camera"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg></button>
+      <button id="fullscreen" type="button" title="Ecran complet" aria-label="Ecran complet" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M3 15v6h6M21 15v6h-6"/></svg></button>
+    </div>
+  </nav>
+</body>
+</html>
