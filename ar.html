@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#202322" />
+  <title>VFX · AR</title>
+  <script type="module" crossorigin src="./assets/ar-CSuqht5d.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/style-BSmmcy11.js">
+  <link rel="stylesheet" crossorigin href="./assets/style-CEfU93o7.css">
+</head>
+<body class="ar-page">
+  <main id="ar-viewport">
+    <video id="ar-video" autoplay muted playsinline hidden aria-label="Imaginea camerei"></video>
+    <canvas id="ar-stage" aria-label="Obiect 3D ancorat de reperul Hiro"></canvas>
+  </main>
+  <section id="ar-start" class="ar-start" aria-label="Pornire AR">
+    <h1>Realitate augmentată</h1>
+    <p>Tipărește reperul Hiro sau afișează-l pe alt ecran. Încadrează-l cu camera, cu marginea neagră vizibilă.</p>
+    <div class="ar-start-actions">
+      <button id="start-camera" type="button">Pornește camera</button>
+      <a href="./assets/ar/hiro.png" download="reper-hiro.png">Descarcă reperul</a>
+    </div>
+    <p class="ar-privacy">Imaginea camerei este analizată local, fără a fi trimisă pe server.</p>
+    <p id="ar-error" role="alert" hidden></p>
+    <a href="./">Înapoi la VFX</a>
+  </section>
+  <p id="ar-status" role="status" hidden>Încadrează reperul Hiro.</p>
+  <nav id="ar-controls" class="controls ar-controls" aria-label="Comenzi AR" hidden>
+    <select id="ar-effect" aria-label="Aspectul obiectului">
+      <option value="solid">Obiect solid</option>
+      <option value="hologram">Hologramă</option>
+    </select>
+    <label class="slider" title="Mărimea obiectului">
+      <input id="ar-scale" type="range" min="25" max="85" value="48" aria-label="Mărimea obiectului" />
+    </label>
+    <button id="stop-camera" type="button" title="Oprește camera" aria-label="Oprește camera"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    <a href="./assets/ar/hiro.png" download="reper-hiro.png">Reper</a>
+    <a href="./">VFX</a>
+  </nav>
+</body>
+</html>
