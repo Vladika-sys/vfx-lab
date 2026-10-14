@@ -63,7 +63,14 @@ MediaPipe Tasks Vision 1.1.0
 Copyright 2026 The MediaPipe Authors.
 https://github.com/google-ai-edge/mediapipe
 Apache License 2.0: the full text is in assets/ar/MEDIAPIPE_LICENSE.txt.
-MagicTouch v2 model documentation:
-https://developers.google.com/edge/mediapipe/solutions/vision/interactive_segmenter
+MagicTouch 512 model (Apache License 2.0), model card:
+https://storage.googleapis.com/mediapipe-assets/Model%20Card%20MagicTouch.pdf
+Model URL:
+https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite
 The runtime WASM and model are fetched from pinned official/CDN URLs;
 the user's images are processed locally and are not uploaded.
+
+Audio recording
+assets/ar/hora.m4a is the M4A recording supplied by the user for this app.
+Its artist, title and license have not been independently verified.
+It is not included under the software or CC0 licenses above.
