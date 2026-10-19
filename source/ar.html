@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#202322" />
+  <title>VFX · AR</title>
+</head>
+<body class="ar-page">
+  <main id="ar-viewport">
+    <video id="ar-video" autoplay muted playsinline hidden aria-label="Imaginea camerei"></video>
+    <canvas id="ar-stage" aria-label="Obiect 3D ancorat de reperul Hiro"></canvas>
+  </main>
+  <section id="ar-start" class="ar-start" aria-label="Pornire AR">
+    <h1>Horă în AR</h1>
+    <p>Încadrează reperul Hiro pentru a așeza hora în spațiul real. Atinge un dansator ca să țopăie sau adaugă propriile obiecte.</p>
+    <div class="ar-start-actions">
+      <button id="start-camera" type="button">Pornește camera</button>
+      <a href="./assets/ar/hiro.png" download="reper-hiro.png">Descarcă reperul</a>
+    </div>
+    <button id="add-object-start" class="text-button" type="button">Adaugă un obiect din fotografie</button>
+    <p class="ar-privacy">Imaginea camerei este analizată local, fără a fi trimisă pe server.</p>
+    <p id="ar-error" role="alert" hidden></p>
+    <a href="./">Înapoi la VFX</a>
+  </section>
+  <p id="ar-status" role="status" hidden>Încadrează reperul Hiro.</p>
+  <nav id="ar-controls" class="controls ar-controls" aria-label="Comenzi AR" hidden>
+    <select id="ar-effect" aria-label="Demonstrație AR">
+      <option value="hora">Horă</option>
+      <option value="solid">Obiect solid</option>
+      <option value="hologram">Hologramă</option>
+    </select>
+    <label class="slider" title="Mărimea obiectului">
+      <input id="ar-scale" type="range" min="25" max="120" value="55" aria-label="Mărimea obiectului" />
+    </label>
+    <button id="stop-camera" type="button" title="Oprește camera" aria-label="Oprește camera"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    <div class="ar-actions">
+      <button id="add-object" type="button" title="Fotografiază un obiect" aria-label="Fotografiază un obiect"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h5l2-3h4l2 3h5v13H3Z"/><circle cx="12" cy="13" r="4"/></svg></button>
+      <button id="dance-pause" type="button" title="Pauză dans" aria-label="Pauză dans" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button>
+      <button id="dance-music" type="button" title="Pornește muzica" aria-label="Pornește muzica" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13M9 7l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg></button>
+      <button id="dance-options" type="button" title="Reglaje horă" aria-label="Reglaje horă" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16M9 4v6M15 14v6"/></svg></button>
+      <button id="save-hora" type="button" title="Salvează imaginea AR" aria-label="Salvează imaginea AR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg></button>
+      <a href="./assets/ar/hiro.png" download="reper-hiro.png">Reper</a>
+      <a href="./">VFX</a>
+    </div>
+  </nav>
+  <section id="hora-settings" class="hora-settings" aria-label="Reglaje horă" hidden>
+    <label>Ritm <input id="hora-tempo" type="range" min="70" max="160" value="112" aria-label="Ritmul horei" /></label>
+    <div><button id="fewer-dancers" type="button">Mai puțini</button><span id="dancer-count" role="status">6 dansatori</span><button id="more-dancers" type="button">Mai mulți</button></div>
+    <button id="remove-object" type="button" disabled>Elimină ultimul obiect</button>
+  </section>
+  <dialog id="object-editor" aria-label="Adaugă un obiect">
+    <header><h2>Obiectul tău</h2><button id="close-object-editor" type="button" aria-label="Închide editorul">×</button></header>
+    <div class="object-source"><button id="retake-object" type="button">Fotografiază</button><button id="choose-object-file" type="button">Foto din telefon</button></div>
+    <input id="object-file" type="file" accept="image/*" hidden />
+    <p id="object-message" role="status">Alege o fotografie.</p>
+    <div class="object-image"><canvas id="object-photo" width="640" height="480" aria-label="Fotografia obiectului. Atinge pentru selectare sau contur manual."></canvas></div>
+    <footer><select id="selection-tool" aria-label="Instrument de decupare"><option value="keep">Păstrează</option><option value="erase">Elimină</option><option value="contour">Contur manual</option></select><button id="reset-cutout" type="button">Reia</button><button id="finish-contour" type="button" hidden>Închide conturul</button><button id="use-object" type="button" disabled>Adaugă în horă</button></footer>
+  </dialog>
+  <script type="module" src="/src/ar.js"></script>
+</body>
+</html>
