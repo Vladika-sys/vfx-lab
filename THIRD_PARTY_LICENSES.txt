@@ -71,6 +71,6 @@ The runtime WASM and model are fetched from pinned official/CDN URLs;
 the user's images are processed locally and are not uploaded.
 
 Audio recording
-assets/ar/hora.m4a is the M4A recording supplied by the user for this app.
-Its artist, title and license have not been independently verified.
+assets/ar/hora.m4a is the audio recording used by the AR scene.
+Its artist, title and redistribution license are not documented in this project.
 It is not included under the software or CC0 licenses above.
