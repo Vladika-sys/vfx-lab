@@ -1,0 +1,18 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Verificare melodie publicată</title></head><body>
+<h1>Verificare melodie publicată</h1><button id="play">Pornește fișierul publicat</button><button id="pause">Pauză</button><p id="status"></p>
+<script type="module">
+import { createHoraMusic } from '../src/hora-music.js';
+const status = document.querySelector('#status');
+class VisibleAudio extends Audio {
+  constructor(src) { super(src); this.controls = true; this.dataset.recording = ''; document.body.appendChild(this); }
+}
+let music;
+document.querySelector('#play').onclick = async () => {
+  try {
+    if (!music) music = createHoraMusic({ src: 'https://vladika-sys.github.io/vfx-lab/assets/ar/hora.m4a', AudioClass: VisibleAudio });
+    await music.resume(); status.textContent = 'PASS — fișierul audio publicat se redă';
+  } catch (error) { status.textContent = `FAIL — ${error.message}`; }
+};
+document.querySelector('#pause').onclick = () => music?.update(0, 112, false);
+window.addEventListener('pagehide', () => music?.close());
+</script></body></html>

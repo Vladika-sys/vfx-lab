@@ -1,0 +1,24 @@
+<!doctype html><html lang="ro"><head><meta charset="UTF-8"><title>Verificare horă AR</title></head>
+<body style="margin:0;background:#e1dfd5;color:#333;font:14px system-ui"><p id="test-result" role="status">Verificare locală — fără camera reală.</p>
+<label>Secvență <select id="phrase"><option value="0">Mers în cerc</option><option value="1">Spre centru</option><option value="2">Pași accentuați</option><option value="3">Schimbare de sens</option></select></label>
+<button id="toggle">Pauză</button><label>Moment <input id="beat" type="range" min="0" max="32" step=".01" value="0" /></label><canvas id="preview"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {createHora} from '../src/hora.js';
+import {horaPhrase} from '../src/hora-motion.js';
+const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('#preview'),antialias:true});renderer.setSize(960,620);renderer.setPixelRatio(1);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xe1dfd5);
+const camera=new THREE.PerspectiveCamera(42,960/620,.01,20);camera.position.set(2.3,2.1,3);
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,.4,0);controls.update();
+scene.add(new THREE.HemisphereLight(0xffffff,0x576352,2.5));const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(-2,4,3);scene.add(light);
+let hora=createHora([],6);scene.add(hora.group);
+let playing=true, previous=performance.now();
+const names=['Mers în cerc','Spre centru','Pași accentuați','Schimbare de sens'];
+const toggle=document.querySelector('#toggle'),seek=document.querySelector('#beat'),phrase=document.querySelector('#phrase');
+function pose(beat){hora.dispose();hora=createHora([],6);scene.add(hora.group);hora.update(beat,{bpm:60});playing=false;toggle.textContent='Continuă';}
+toggle.onclick=()=>{playing=!playing;toggle.textContent=playing?'Pauză':'Continuă';};
+phrase.onchange=()=>pose(Number(phrase.value)*8+2.5);
+seek.oninput=()=>pose(Number(seek.value));
+function frame(now){const delta=Math.min((now-previous)/1000,.05);previous=now;const beat=hora.update(delta,{dancing:playing});const section=horaPhrase(beat);seek.value=beat%32;phrase.value=section.index;document.querySelector('#test-result').textContent=`Verificare locală — ${names[section.index]}, ${(beat%32).toFixed(1)} bătăi. Cameră reală nefolosită.`;renderer.render(scene,camera);requestAnimationFrame(frame);}requestAnimationFrame(frame);
+</script></body></html>

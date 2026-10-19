@@ -1,0 +1,23 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Verificare AR — cameră simulată</title></head><body>
+<script type="module">
+import * as THREE from 'three';
+const html=await (await fetch('/ar.html')).text();
+const parsed=new DOMParser().parseFromString(html,'text/html');
+document.body.className='ar-page';document.body.innerHTML=parsed.body.innerHTML;
+document.querySelectorAll('script').forEach(script=>script.remove());
+const image=new Image();image.src='/assets/ar/hiro.png';await image.decode();
+const input=document.createElement('canvas');
+const renderer=new THREE.WebGLRenderer({canvas:input,antialias:true,preserveDrawingBuffer:true});renderer.setSize(640,480);renderer.setPixelRatio(1);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xb3ada2);
+const camera=new THREE.PerspectiveCamera(45,640/480,.01,20);camera.position.set(0,2.8,3.2);camera.lookAt(0,0,0);
+const texture=new THREE.Texture(image);texture.colorSpace=THREE.SRGBColorSpace;texture.needsUpdate=true;
+const paper=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.8),new THREE.MeshBasicMaterial({map:texture}));paper.rotation.x=-Math.PI/2;scene.add(paper);
+function frame(){renderer.render(scene,camera);requestAnimationFrame(frame);}frame();
+Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>input.captureStream(30)}});
+const NativeAudio = window.Audio;
+window.Audio = class extends NativeAudio {
+  constructor(src) { super(src); this.hidden = true; this.dataset.testRecording = ''; document.body.appendChild(this); }
+};
+await import('/src/ar.js');
+const note=document.createElement('span');note.textContent='Camera simulată · verificare locală';note.style.cssText='position:fixed;left:8px;top:8px;font:12px system-ui;color:#ddd;z-index:20;pointer-events:none';document.body.appendChild(note);
+</script></body></html>

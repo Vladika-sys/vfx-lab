@@ -1,0 +1,25 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Verificare viteză decupare</title></head><body>
+<button id="run">Măsoară decuparea</button><pre id="results"></pre><canvas id="result"></canvas>
+<script type="module">
+import { createCutoutClient } from '../src/cutout-client.js';
+const out = document.querySelector('#results'), client = createCutoutClient();
+document.querySelector('#run').onclick = async () => {
+  document.querySelector('#run').disabled = true; out.textContent = '';
+  const report = (label, started) => out.textContent += `${label}: ${(performance.now() - started).toFixed(0)} ms\n`;
+  try {
+    let started = performance.now(); const warm = await client.warmup(); report(`Inițializare (${warm.delegate})`, started);
+    const image = new Image(); image.src = './fixtures/cup.png'; await image.decode();
+    for (let i = 1; i <= 2; i++) {
+      started = performance.now(); await client.prepare(await createImageBitmap(image, { resizeWidth: 512, resizeHeight: 384 }), i); report(`Fotografia ${i} — pregătire`, started);
+      started = performance.now(); const result = await client.segment([{ brushMode: 1, point: [{ x: .5, y: .5 }], isCompleted: true }], i); report(`Fotografia ${i} — atingere`, started);
+      const canvas = document.querySelector('#result'); canvas.width = result.width; canvas.height = result.height;
+      const context = canvas.getContext('2d'), pixels = context.createImageData(result.width, result.height);
+      for (let p = 0; p < result.values.length; p++) pixels.data[p * 4 + 3] = result.values[p] * 255;
+      context.putImageData(pixels, 0, 0);
+    }
+    out.textContent += 'PASS — două fotografii, același model\n';
+  } catch (error) { out.textContent += `FAIL — ${error.message}\n`; }
+  document.querySelector('#run').disabled = false;
+};
+window.addEventListener('pagehide', () => client.dispose());
+</script></body></html>

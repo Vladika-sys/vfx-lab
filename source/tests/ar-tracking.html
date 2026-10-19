@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ro">
+<head><meta charset="utf-8"><title>Verificare reper AR</title></head>
+<body style="margin:0;background:#eee;color:#222;font:14px system-ui">
+  <p id="result" role="status">Verificare în curs…</p>
+  <div id="test-view" style="position:relative;width:640px;height:480px">
+    <canvas id="source" width="640" height="480" style="position:absolute"></canvas>
+    <canvas id="overlay" style="position:absolute"></canvas>
+  </div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { createMarkerTracker } from '../src/ar-tracking.js';
+    import { buildPump } from '../src/pump.js';
+    import { createProjectionMaterial } from '../src/ar-projection.js';
+    import { createHora } from '../src/hora.js';
+    const result = document.querySelector('#result');
+    try {
+      const image = new Image();
+      image.src = '/assets/ar/hiro.png';
+      await image.decode();
+      const source = document.querySelector('#source');
+      const ctx = source.getContext('2d');
+      const renderer = new THREE.WebGLRenderer({canvas:document.querySelector('#overlay'),alpha:true,antialias:true});
+      renderer.setSize(640,480);
+      const scene = new THREE.Scene();
+      scene.add(new THREE.HemisphereLight(0xffffff,0x555555,3));
+      const camera = new THREE.Camera();
+      const results = [];
+      for (const [width,height] of [[640,480],[360,640]]) {
+        source.width = width; source.height = height;
+        renderer.setSize(width,height);
+        document.querySelector('#test-view').style.width = `${width}px`;
+        document.querySelector('#test-view').style.height = `${height}px`;
+        const tracker = await createMarkerTracker({width,height,assetRoot:'/assets/ar/'});
+        camera.projectionMatrix.copy(tracker.projectionMatrix);
+        camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+        scene.add(tracker.anchor);
+        const hora=createHora([],6);hora.group.scale.setScalar(.6);tracker.anchor.add(hora.group);
+        const model=buildPump(tracker.anchor,[0,0,0],{steel:new THREE.MeshStandardMaterial({color:0x747e78,metalness:.3,roughness:.4}),iron:new THREE.MeshStandardMaterial({color:0x303b35})});
+        model.scale.setScalar(.48);
+        const projection=createProjectionMaterial();
+        model.traverse(object=>{if(object.isMesh)object.userData.solidMaterial=object.material;});
+        for (const [label,cx,cy,rotation,present] of [
+          ['centru',width*.5,height*.6,0,true],
+          ['deplasat',width*.32,height*.55,.22,true],
+          ['rotit',width*.5,height*.6,Math.PI/2,true],
+          ['pierdut',0,0,0,false],
+        ]) {
+          ctx.fillStyle='white';ctx.fillRect(0,0,width,height);
+          if(present){ctx.save();ctx.translate(cx,cy);ctx.rotate(rotation);const size=Math.min(width,height)*.48;ctx.drawImage(image,-size/2,-size/2,size,size);ctx.restore();}
+          const end=performance.now()+5000;
+          let detected=false,frames=0,offset=Infinity;
+          do {
+            await new Promise(requestAnimationFrame);
+            detected=tracker.update(source,1/30);
+            hora.update(detected ? 1/30 : 0);
+            scene.updateMatrixWorld(true);
+            const projected=tracker.anchor.position.clone().project(camera);
+            const px=(projected.x+1)*width/2,py=(1-projected.y)*height/2;
+            offset=present?Math.hypot(px-cx,py-cy):0;
+            frames++;
+          } while((frames<20||detected!==present||offset>=18)&&performance.now()<end);
+          const pass=detected===present&&Number.isFinite(offset)&&offset<18;
+          results.push({size:`${width}x${height}`,case:label,pass,detected,offset:Math.round(offset*10)/10});
+          renderer.render(scene,camera);
+          if(present){
+            model.traverse(object=>{if(object.isMesh)object.material=projection;});
+            projection.uniforms.uTime.value=2;
+            renderer.render(scene,camera);
+            model.traverse(object=>{if(object.isMesh)object.material=object.userData.solidMaterial;});
+          }
+          result.textContent=JSON.stringify(results);
+          if(!pass)throw new Error(`Verificare eșuată: ${width}x${height}, ${label}`);
+        }
+        scene.remove(tracker.anchor);
+        tracker.dispose();
+        hora.dispose();
+      }
+      result.textContent=`PASS ${JSON.stringify(results)}`;
+    } catch(error) {result.textContent+=` FAIL ${error.stack||error}`;}
+  </script>
+</body>
+</html>
