@@ -56,7 +56,7 @@ export async function createImageTracker({ width, height, targetUrl, source, sig
     controller.dummyRun(source);
     abort();
     return {
-      anchor, projectionMatrix,
+      anchor, projectionMatrix, targetAspect: imageWidth / imageHeight,
       update() {
         if (!disposed && !running) {
           running = true; processing = true;

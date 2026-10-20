@@ -5,18 +5,19 @@
 import { createImageTracker } from '../src/image-tracking.js';
 import { Vector3 } from 'three';
 const result = document.querySelector('#result'), canvas = document.querySelector('#source'), context = canvas.getContext('2d');
-const image = new Image(); image.src = '/assets/target/eticheta-cafea.png'; await image.decode();
+const image = new Image(); image.src = '/assets/target/coffe.jpg'; await image.decode();
 const results = [];
 let tracker;
 try {
   for (const [width,height] of [[640,480],[360,640]]) {
     canvas.width = width; canvas.height = height;
     context.fillStyle = '#d1cec3'; context.fillRect(0,0,width,height);
-    tracker = await createImageTracker({width,height,source:canvas,targetUrl:'/assets/target/eticheta-cafea.mind'});
+    tracker = await createImageTracker({width,height,source:canvas,targetUrl:'/assets/target/cafea.mind'});
     for (const [label, present, shift, rotation] of [['centru',true,0,0],['deplasat și rotit',true,-.10,.12],['absent',false,0,0],['revenit',true,.05,-.08]]) {
       context.fillStyle = '#d1cec3'; context.fillRect(0,0,width,height);
       if (present) { context.save(); context.translate(width*(.5+shift),height*.5); context.rotate(rotation);
-        const h=Math.min(height*.78,width*.95); context.drawImage(image,-h*.375,-h/2,h*.75,h); context.restore(); }
+        const fit=Math.min(height*.78/image.height,width*.85/image.width);
+        const w=image.width*fit,h=image.height*fit;context.drawImage(image,-w/2,-h/2,w,h); context.restore(); }
       tracker.update();
       const deadline=performance.now()+15000;
       let pass=false;

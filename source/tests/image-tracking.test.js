@@ -15,6 +15,7 @@ function fixture(options = {}) {
 }
 test('image tracking uses the target pose and its dimensions, not a screen overlay', async () => {
   const f = fixture(), tracker = await createImageTracker(f.args);
+  assert.equal(tracker.targetAspect, 720 / 960);
   assert.equal(tracker.anchor.visible, false);
   tracker.update(); tracker.update(); assert.equal(f.calls.process, 1);
   f.send({ type: 'updateMatrix', targetIndex: 0, worldMatrix: [1,0,0,0,0,1,0,0,0,0,1,0,12,24,-2000,1] });

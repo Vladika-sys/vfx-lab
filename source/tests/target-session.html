@@ -8,9 +8,9 @@ for(const link of parsed.head.querySelectorAll('link[rel="stylesheet"]'))documen
 document.body.className='ar-page'; document.body.innerHTML=parsed.body.innerHTML;
 document.querySelectorAll('script').forEach(script=>script.remove());
 const source=document.createElement('canvas');source.width=960;source.height=720;const context=source.getContext('2d');
-const image=new Image();image.src='/assets/target/eticheta-cafea.png';await image.decode();
+const image=new Image();image.src='/assets/target/coffe.jpg';await image.decode();
 let visible=true,shift=0,tilt=1;
-function draw(){context.fillStyle='#b3b0a5';context.fillRect(0,0,960,720);if(visible){context.save();context.translate(480+shift,360);context.rotate(-.14);context.scale(1,tilt);context.drawImage(image,-198,-264,396,528);context.restore();}requestAnimationFrame(draw);}draw();
+function draw(){context.fillStyle='#b3b0a5';context.fillRect(0,0,960,720);if(visible){context.save();context.translate(480+shift,360);context.rotate(-.14);context.scale(1,tilt);const w=620,h=w*image.height/image.width;context.drawImage(image,-w/2,-h/2,w,h);context.restore();}requestAnimationFrame(draw);}draw();
 Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>source.captureStream(30)}});
 const controls=document.createElement('div');controls.style.cssText='position:fixed;top:10px;left:10px;font:12px system-ui;z-index:30;color:white';
 controls.innerHTML='<span>Cameră simulată · verificare locală</span> <button id="test-visible" style="width:auto">Ascunde eticheta</button> <button id="test-move" style="width:auto">Deplasează eticheta</button> <button id="test-tilt" style="width:auto">Înclină eticheta</button> <output id="test-audio">Sunet: oprit</output>';

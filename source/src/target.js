@@ -74,7 +74,7 @@ async function start() {
     const timeout = setTimeout(() => abort.abort(), 45000);
     try {
       tracker = await createImageTracker({ width: source.width, height: source.height, source,
-        signal: abort.signal, targetUrl: `${import.meta.env.BASE_URL}assets/target/eticheta-cafea.mind` });
+        signal: abort.signal, targetUrl: `${import.meta.env.BASE_URL}assets/target/cafea.mind` });
     } finally { clearTimeout(timeout); }
     if (!current()) { cleanup(); return; }
     const scene = new THREE.Scene(), camera = new THREE.Camera();
@@ -97,7 +97,7 @@ async function start() {
     pauseButton.setAttribute('aria-label', 'Pauză efect'); pauseButton.title = 'Pauză efect';
     soundButton.disabled = !sound; soundButton.setAttribute('aria-pressed', String(!muted));
     panel.hidden = true; canvas.hidden = toolbar.hidden = status.hidden = false;
-    status.textContent = 'Încadrează eticheta de cafea.';
+    status.textContent = 'Încadrează fotografia cu ceașca de cafea.';
     fit();
     let previous = performance.now(), wasTracked = false;
     const frame = now => {
@@ -109,7 +109,7 @@ async function start() {
       if (tracked && !wasTracked) effect.found();
       wasTracked = tracked;
       status.hidden = tracked;
-      effect.group.scale.setScalar(Number(scale.value) / 100);
+      effect.group.scale.setScalar(Math.min(1, 1 / tracker.targetAspect) * Number(scale.value) / 100);
       if (tracked && !paused) effect.update(delta);
       sound?.setActive(tracked && !paused && !muted);
       sound?.update();
