@@ -74,3 +74,21 @@ Audio recording
 assets/ar/hora.m4a is the audio recording used by the AR scene.
 Its artist, title and redistribution license are not documented in this project.
 It is not included under the software or CC0 licenses above.
+
+MindAR 1.2.5
+Copyright (c) 2020 hiukim
+https://github.com/hiukim/mind-ar-js
+MIT License: full text in licenses/MindAR.txt.
+The image-tracking core is bundled locally; the Three.js wrapper is not used.
+
+TensorFlow.js (used by MindAR)
+Copyright 2020 Google Inc. All Rights Reserved.
+https://github.com/tensorflow/tfjs
+Apache License 2.0: full text in licenses/TensorFlow.txt.
+Original license notices are retained in the distributed bundle.
+
+Coffee target and sound
+assets/target/eticheta-cafea.svg and .png are original demonstration artwork.
+assets/target/eticheta-cafea.mind contains descriptors compiled from that artwork.
+The target effect's soundtrack is generated locally by src/target-sound.js;
+it is not a third-party recording and does not use the hora.m4a file.

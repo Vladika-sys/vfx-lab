@@ -1,6 +1,6 @@
 # VFX Lab
 
-Aplicație Three.js cu 14 efecte vizuale și o horă interactivă în realitate augmentată, ancorată de reperul Hiro.
+Aplicație Three.js cu 14 efecte vizuale, o horă interactivă ancorată de reperul Hiro și un efect AR declanșat de o etichetă de cafea.
 
 ## Pornire
 
@@ -26,6 +26,25 @@ Adresa GitHub Pages: https://vladika-sys.github.io/vfx-lab/
 Pentru actualizări, salvează sursa în `source/`, rulează compilarea și copiază conținutul `source/dist/` în rădăcina depozitului, fără să ștergi `source/`. GitHub Pages folosește ramura `main`, directorul `/ (root)`. Publicarea se termină în fila Actions; modificările din sursă nu actualizează singure site-ul.
 
 ## Realitate augmentată
+
+### Efect declanșat de imagine — eticheta de cafea
+
+`target.html` folosește recunoașterea unei imagini naturale prin MindAR 1.2.5, fără reperul Hiro. Eticheta pregătită pentru demonstrație este în `public/assets/target/eticheta-cafea.png`. Poate fi tipărită pe hârtie mată sau afișată pe un al doilea ecran.
+
+1. Deschide `target.html` pe telefon, prin HTTPS, în Safari sau Chrome. Poți ajunge aici și din pagina horei, prin legătura „Etichetă”.
+2. Descarcă eticheta, apoi apasă „Pornește camera” și permite accesul la camera din spate. Nu este solicitat microfonul.
+3. Încadrează eticheta întreagă, bine luminată, fără reflexii. Apare o ceașcă tridimensională cu farfurioară, abur și boabe care se rotesc în jurul ei. Animația este ancorată de etichetă: deplasarea sau înclinarea acesteia schimbă poziția și perspectiva scenei.
+4. Atingerea ceștii sau a boabelor produce un impuls de mișcare. Bara de jos permite pauză, reglarea mărimii și oprirea sunetului. La pierderea etichetei, scena dispare și muzica se oprește; la recunoaștere, efectul reapare. Închiderea sau ascunderea paginii oprește camera și eliberează sesiunea.
+
+Ceașca este construită din geometrie de revoluție, toruri și discuri Three.js; boabele au traiectorii circulare la înălțimi diferite. Aburul este un sistem de particule transparente. Fundalul sonor este o melodie instrumentală generată local prin Web Audio, din oscilatoare sinusoidale și triunghiulare; nu este o înregistrare descărcată. Apăsarea inițială pe „Pornește camera” deblochează redarea, iar muzica rămâne activă numai cât timp eticheta este recunoscută și efectul nu este în pauză.
+
+Imaginea este analizată local, pe o copie de maximum 640 px. Poziția estimată de MindAR actualizează matricea grupului Three.js, iar proiecția camerei virtuale este adaptată imaginii video. Camera și suprafața 3D sunt decupate identic la redimensionarea ecranului. Nu se încarcă fotografii pe server. Prima deschidere descarcă modulul de recunoaștere; performanța și stabilitatea depind de telefon, lumină și mărimea etichetei în cadru. Nu există ascundere automată în spatele obiectelor reale sau reconstrucție a încăperii.
+
+Recunoașterea este pregătită pentru această etichetă, nu pentru orice ambalaj. Pentru înlocuire, exportă noua imagine la 720×960 px în `public/assets/target/eticheta-cafea.png`, actualizează sursa SVG dacă este cazul, apoi rulează `npm run target:compile` și `npm run build`. Compilarea extrage punctele caracteristice și generează fișierul `.mind`; acesta trebuie publicat împreună cu noua imagine. Nu schimba numai fotografia fără recompilarea țintei.
+
+`src/image-tracking.js` integrează nucleul MindAR cu Three.js, `src/coffee-effect.js` construiește și animă scena, `src/target-sound.js` produce sunetul, iar `src/target.js` gestionează camera și comenzile. `npm test` include verificări pentru ancorare, anularea inițializării și pornirea/oprirea sunetului. Cu serverul local pornit, `/tests/image-tracking.html` verifică recunoașterea reală, deplasarea și pierderea imaginii în portret și peisaj. `/tests/target-session.html` verifică interfața cu o cameră simulată, inclusiv sunetul măsurat. Aceste probe nu înlocuiesc testarea camerei pe telefon.
+
+Surse tehnice: [MindAR](https://github.com/hiukim/mind-ar-js), [documentația MindAR](https://hiukim.github.io/mind-ar-js-doc/), [Three.js](https://threejs.org/docs/), [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API). Textele licențelor MindAR și TensorFlow.js sunt în `public/licenses/`.
 
 ### Hora obiectelor
 

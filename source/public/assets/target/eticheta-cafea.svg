@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
+  <defs>
+    <filter id="paper"><feTurbulence baseFrequency=".36" numOctaves="3" seed="18"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".12"/></feComponentTransfer><feBlend in="SourceGraphic" mode="multiply"/></filter>
+    <linearGradient id="leaf"><stop stop-color="#234e3e"/><stop offset=".55" stop-color="#447250"/><stop offset="1" stop-color="#16392f"/></linearGradient>
+    <radialGradient id="cherry"><stop stop-color="#cf6249"/><stop offset=".6" stop-color="#9e332b"/><stop offset="1" stop-color="#592e26"/></radialGradient>
+    <path id="leafShape" d="M0 0 C-51-48-87-108-62-158 C4-154 46-99 0 0Z"/>
+    <g id="bean"><ellipse rx="22" ry="33" fill="#6d4734"/><path d="M-2-29C13-8-13 3 2 29" fill="none" stroke="#c6986a" stroke-width="5"/><path d="M-17-18Q-25 3-12 23" fill="none" stroke="#402f27" stroke-width="3"/></g>
+  </defs>
+  <path fill="#eee4cf" d="M0 0h720v960H0z"/>
+  <path fill="#e2d7bd" filter="url(#paper)" d="M0 0h720v960H0z"/>
+  <path fill="#213f34" d="M0 0h36v960H0z"/>
+  <path d="M65 46H670V908H65" fill="none" stroke="#998665"/>
+  <text x="92" y="102" font-family="Georgia,serif" font-size="28" letter-spacing="7" fill="#284b39">ATELIER</text>
+  <text x="90" y="194" font-family="Georgia,serif" font-size="82" fill="#213f34">Cafea</text>
+  <text x="95" y="234" font-family="Arial,sans-serif" font-size="16" letter-spacing="5" fill="#65533d">BOABE · ABUR · POVESTE</text>
+  <path d="M94 260h295" stroke="#a68c63"/>
+  <g transform="translate(583 135)" fill="none" stroke="#846c49">
+    <circle r="52"/><circle r="42"/>
+    <path d="M0-58v116M-58 0H58M-40-40l80 80M-40 40l80-80"/>
+    <text text-anchor="middle" y="12" font-family="Georgia,serif" font-size="34" fill="#846c49" stroke="none">01</text>
+  </g>
+  <path d="M165 735C234 638 295 578 399 439C466 350 487 321 536 287" fill="none" stroke="#70543c" stroke-width="12"/>
+  <path d="M271 599L157 483M357 494L518 468M418 408L334 307M220 660L420 654" fill="none" stroke="#70543c" stroke-width="6"/>
+  <g fill="url(#leaf)" stroke="#244536" stroke-width="2">
+    <use href="#leafShape" transform="translate(198 529) rotate(-55) scale(1.1)"/>
+    <use href="#leafShape" transform="translate(255 608) rotate(30) scale(1.15)"/>
+    <use href="#leafShape" transform="translate(333 527) rotate(83) scale(1.18)"/>
+    <use href="#leafShape" transform="translate(400 437) rotate(-25) scale(.9)"/>
+    <use href="#leafShape" transform="translate(452 374) rotate(73) scale(.82)"/>
+    <use href="#leafShape" transform="translate(218 660) rotate(-69) scale(.86)"/>
+    <use href="#leafShape" transform="translate(360 657) rotate(110) scale(1.02)"/>
+  </g>
+  <g fill="none" stroke="#b8b680" stroke-width="1.5" opacity=".75">
+    <path d="M190 528L83 445M245 601L270 431M340 530L519 485M407 429L381 298M452 366L562 328M223 653L114 637M364 657L500 681"/>
+    <path d="M137 487l-17-39M157 502l-14-41M257 535l-31-20M260 495l-27-20M420 507l26-32M459 495l16-27M400 372l-28-22M480 356l12-22M154 642l-24-23M434 669l24-19"/>
+  </g>
+  <g fill="url(#cherry)" stroke="#652e26" stroke-width="2">
+    <ellipse cx="285" cy="599" rx="25" ry="31" transform="rotate(-24 285 599)"/>
+    <ellipse cx="318" cy="565" rx="24" ry="29" transform="rotate(23 318 565)"/>
+    <ellipse cx="366" cy="492" rx="22" ry="27"/>
+    <ellipse cx="402" cy="469" rx="23" ry="27" transform="rotate(-28 402 469)"/>
+    <ellipse cx="460" cy="381" rx="18" ry="24"/>
+  </g>
+  <g fill="none" stroke="#e29b73" stroke-width="3" opacity=".7"><path d="M274 580q-9 8-6 22M310 548q-8 9-7 17M358 475q-7 7-6 16M396 451q-8 6-7 16M455 366q-6 7-5 14"/></g>
+  <g fill="#71573e" font-family="Arial,sans-serif" font-size="13">
+    <text x="90" y="334">Coffea arabica</text><path d="M91 343h96l24 45" fill="none" stroke="#9c8865"/>
+    <text x="526" y="572">FRUCT</text><path d="M511 567l-85-82" fill="none" stroke="#9c8865"/>
+  </g>
+  <use href="#bean" transform="translate(504 734) rotate(-27)"/>
+  <use href="#bean" transform="translate(561 775) rotate(36) scale(.8)"/>
+  <use href="#bean" transform="translate(445 786) rotate(63) scale(.7)"/>
+  <text x="95" y="790" font-family="Georgia,serif" font-size="30" fill="#284b39">Prăjire lentă</text>
+  <text x="96" y="827" font-family="Arial,sans-serif" font-size="15" letter-spacing="2" fill="#65533d">NOTE DE CACAO ȘI ALUNE</text>
+  <path d="M95 850h532" stroke="#a68c63"/>
+  <text x="96" y="881" font-family="Arial,sans-serif" font-size="14" fill="#65533d">250 g</text>
+  <text x="468" y="881" font-family="Arial,sans-serif" font-size="13" fill="#65533d">LOT 26 · NR. 0148</text>
+</svg>

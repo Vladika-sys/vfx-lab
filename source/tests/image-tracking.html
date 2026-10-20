@@ -1,0 +1,37 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Verificare imagine-țintă</title></head>
+<body style="margin:20px;background:#eee;color:#222;font:14px system-ui">
+<p id="result" role="status">Inițializare…</p><canvas id="source"></canvas>
+<script type="module">
+import { createImageTracker } from '../src/image-tracking.js';
+import { Vector3 } from 'three';
+const result = document.querySelector('#result'), canvas = document.querySelector('#source'), context = canvas.getContext('2d');
+const image = new Image(); image.src = '/assets/target/eticheta-cafea.png'; await image.decode();
+const results = [];
+let tracker;
+try {
+  for (const [width,height] of [[640,480],[360,640]]) {
+    canvas.width = width; canvas.height = height;
+    context.fillStyle = '#d1cec3'; context.fillRect(0,0,width,height);
+    tracker = await createImageTracker({width,height,source:canvas,targetUrl:'/assets/target/eticheta-cafea.mind'});
+    for (const [label, present, shift, rotation] of [['centru',true,0,0],['deplasat și rotit',true,-.10,.12],['absent',false,0,0],['revenit',true,.05,-.08]]) {
+      context.fillStyle = '#d1cec3'; context.fillRect(0,0,width,height);
+      if (present) { context.save(); context.translate(width*(.5+shift),height*.5); context.rotate(rotation);
+        const h=Math.min(height*.78,width*.95); context.drawImage(image,-h*.375,-h/2,h*.75,h); context.restore(); }
+      tracker.update();
+      const deadline=performance.now()+15000;
+      let pass=false;
+      do {
+        await new Promise(requestAnimationFrame);
+        const center = new Vector3().setFromMatrixPosition(tracker.anchor.matrix).applyMatrix4(tracker.projectionMatrix);
+        const distance = Math.hypot((center.x + 1) * width / 2 - width * (.5 + shift), (1 - center.y) * height / 2 - height * .5);
+        if (tracker.anchor.visible === present && (!present || distance < 12)) { pass=true; break; }
+      } while(performance.now()<deadline);
+      results.push({size:`${width}x${height}`,label,pass}); result.textContent=JSON.stringify(results);
+      if(!pass) throw new Error(label);
+    }
+    tracker.dispose(); tracker=null;
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  result.textContent='PASS '+JSON.stringify(results);
+} catch(error) { tracker?.dispose(); result.textContent='FAIL '+error.message+' '+JSON.stringify(results); }
+</script></body></html>

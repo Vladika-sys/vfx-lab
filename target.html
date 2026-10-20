@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#202322" />
+  <title>Etichetă · AR</title>
+  <script type="module" crossorigin src="./assets/target-BdmT2BV8.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/style-a-kycQvC.js">
+  <link rel="modulepreload" crossorigin href="./assets/RoomEnvironment-DUbdukV-.js">
+  <link rel="stylesheet" crossorigin href="./assets/style-Bnw51YkK.css">
+</head>
+<body class="ar-page">
+  <main id="target-viewport">
+    <video id="target-video" autoplay muted playsinline hidden aria-label="Imaginea camerei"></video>
+    <canvas id="target-stage" hidden aria-label="Ceașcă 3D ancorată de eticheta de cafea"></canvas>
+  </main>
+  <section class="ar-start" id="target-start" aria-label="Pornire efect pe imagine">
+    <h1>Etichetă în AR</h1>
+    <p>Încadrează eticheta de cafea. Deasupra ei apare o ceașcă cu abur și boabe în mișcare, însoțită de muzică.</p>
+    <a href="./assets/target/eticheta-cafea.png" download="eticheta-cafea.png"><img class="target-thumb" src="./assets/target/eticheta-cafea.png" alt="Eticheta de cafea care declanșează efectul" /></a>
+    <div class="ar-start-actions">
+      <button id="start-target" type="button">Pornește camera</button>
+      <a href="./assets/target/eticheta-cafea.png" download="eticheta-cafea.png">Descarcă eticheta</a>
+    </div>
+    <p class="ar-privacy">Tipărește eticheta sau afișeaz-o pe alt ecran. Camera este prelucrată local. Sunetul pornește când imaginea este recunoscută.</p>
+    <p id="target-error" role="alert" hidden></p>
+    <a href="./ar.html">Hora cu Hiro</a> · <a href="./">VFX</a>
+  </section>
+  <p id="target-status" role="status" hidden>Încadrează eticheta de cafea.</p>
+  <nav id="target-controls" class="controls target-controls" aria-label="Comenzi pentru eticheta AR" hidden>
+    <button id="target-sound" type="button" aria-label="Oprește sunetul" title="Oprește sunetul" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 9 5 0 5-5v16l-5-5H4ZM18 8q5 4 0 8"/></svg></button>
+    <button id="target-pause" type="button" aria-label="Pauză efect" title="Pauză efect" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button>
+    <label class="slider" title="Mărimea animației"><input id="target-scale" type="range" min="50" max="150" value="100" aria-label="Mărimea animației" /></label>
+    <a href="./assets/target/eticheta-cafea.png" download="eticheta-cafea.png">Etichetă</a>
+    <a href="./ar.html">Horă</a>
+    <button id="stop-target" type="button" aria-label="Oprește camera" title="Oprește camera"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+  </nav>
+</body>
+</html>
