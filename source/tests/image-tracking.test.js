@@ -14,7 +14,8 @@ function fixture(options = {}) {
   return { args, controller, calls, send: data => update(data) };
 }
 test('image tracking uses the target pose and its dimensions, not a screen overlay', async () => {
-  const f = fixture(), tracker = await createImageTracker(f.args);
+  let time = 0;
+  const f = fixture({ now: () => time }), tracker = await createImageTracker(f.args);
   assert.equal(tracker.targetAspect, 720 / 960);
   assert.equal(tracker.anchor.visible, false);
   tracker.update(); tracker.update(); assert.equal(f.calls.process, 1);
@@ -24,6 +25,8 @@ test('image tracking uses the target pose and its dimensions, not a screen overl
   assert.equal(tracker.anchor.matrix.elements[13], 504);
   assert.equal(tracker.anchor.matrix.elements[0], 720);
   f.send({ type: 'updateMatrix', targetIndex: 0, worldMatrix: null });
+  assert.equal(tracker.update(), true);
+  time = 121;
   assert.equal(tracker.update(), false);
   tracker.dispose(); f.send({ type: 'processDone' });
   assert.equal(f.calls.dispose, 1);

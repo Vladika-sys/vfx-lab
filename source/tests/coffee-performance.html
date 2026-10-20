@@ -1,0 +1,20 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Verificare randare cafea</title></head>
+<body style="background:#252a27;color:white;font:14px system-ui"><pre id="metrics">Pregătire…</pre><canvas id="view"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { createCoffeeEffect } from '../src/coffee-effect.js';
+const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('#view'),antialias:true});
+renderer.setSize(640,480);renderer.setPixelRatio(1);
+const scene=new THREE.Scene();scene.background=new THREE.Color('#252a27');scene.add(new THREE.HemisphereLight(0xffffff,0x625747,3));
+const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(2,4,3);scene.add(light);
+const camera=new THREE.PerspectiveCamera(45,640/480,.01,20);camera.position.set(.6,1,1.5);camera.lookAt(0,.3,0);
+const effect=createCoffeeEffect();effect.group.rotation.x=-Math.PI/2;scene.add(effect.group);
+const frames=[];let previous=performance.now();
+for(let i=0;i<150;i++){
+  const now=await new Promise(requestAnimationFrame);if(i>30)frames.push(now-previous);previous=now;
+  effect.update(1/60);renderer.render(scene,camera);
+}
+frames.sort((a,b)=>a-b);
+document.querySelector('#metrics').textContent=JSON.stringify({drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
+  medianFrameMs:Number(frames[Math.floor(frames.length/2)].toFixed(2)),p95FrameMs:Number(frames[Math.floor(frames.length*.95)].toFixed(2))});
+</script></body></html>

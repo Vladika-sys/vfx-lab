@@ -9,11 +9,11 @@ document.body.className='ar-page'; document.body.innerHTML=parsed.body.innerHTML
 document.querySelectorAll('script').forEach(script=>script.remove());
 const source=document.createElement('canvas');source.width=960;source.height=720;const context=source.getContext('2d');
 const image=new Image();image.src='/assets/target/coffe.jpg';await image.decode();
-let visible=true,shift=0,tilt=1;
-function draw(){context.fillStyle='#b3b0a5';context.fillRect(0,0,960,720);if(visible){context.save();context.translate(480+shift,360);context.rotate(-.14);context.scale(1,tilt);const w=620,h=w*image.height/image.width;context.drawImage(image,-w/2,-h/2,w,h);context.restore();}requestAnimationFrame(draw);}draw();
+let visible=true,shift=0,tilt=1,moving=false;
+function draw(now=0){context.fillStyle='#b3b0a5';context.fillRect(0,0,960,720);if(visible){context.save();context.translate(480+shift+(moving?Math.sin(now*.0012)*70:0),360);context.rotate(-.14);context.scale(1,tilt);const w=620,h=w*image.height/image.width;context.drawImage(image,-w/2,-h/2,w,h);context.restore();}requestAnimationFrame(draw);}draw();
 Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>source.captureStream(30)}});
 const controls=document.createElement('div');controls.style.cssText='position:fixed;top:10px;left:10px;font:12px system-ui;z-index:30;color:white';
-controls.innerHTML='<span>Cameră simulată · verificare locală</span> <button id="test-visible" style="width:auto">Ascunde eticheta</button> <button id="test-move" style="width:auto">Deplasează eticheta</button> <button id="test-tilt" style="width:auto">Înclină eticheta</button> <output id="test-audio">Sunet: oprit</output>';
+controls.innerHTML='<span>Cameră simulată · verificare locală</span> <button id="test-visible" style="width:auto">Ascunde fotografia</button> <button id="test-move" style="width:auto">Deplasează fotografia</button> <button id="test-tilt" style="width:auto">Înclină fotografia</button> <button id="test-motion" style="width:auto">Mișcare continuă</button> <output id="test-audio">Sunet: oprit</output>';
 document.body.appendChild(controls);
 const NativeAudioContext=window.AudioContext;
 window.AudioContext=class extends NativeAudioContext {
@@ -25,9 +25,10 @@ window.AudioContext=class extends NativeAudioContext {
       document.querySelector('#test-audio').textContent=`Sunet: ${rms>.0001?'activ':'oprit'} (${rms.toFixed(4)})`;requestAnimationFrame(meter);};meter();
   }
 };
-document.querySelector('#test-visible').onclick=event=>{visible=!visible;event.target.textContent=visible?'Ascunde eticheta':'Arată eticheta';};
+document.querySelector('#test-visible').onclick=event=>{visible=!visible;event.target.textContent=visible?'Ascunde fotografia':'Arată fotografia';};
 document.querySelector('#test-move').onclick=()=>{shift=shift===0?-120:0;};
 document.querySelector('#test-tilt').onclick=()=>{tilt=tilt===1?.6:1;};
+document.querySelector('#test-motion').onclick=event=>{moving=!moving;event.target.textContent=moving?'Oprește mișcarea':'Mișcare continuă';};
 const script=[...parsed.querySelectorAll('script[type="module"]')].find(element=>element.getAttribute('src')?.includes('/assets/target-'));
 const entry=built?new URL(script.getAttribute('src'),document.baseURI).href:'/src/target.js';
 await import(/* @vite-ignore */ entry);

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createTrackedPose } from './image-pose.js';
 
 export async function createImageTracker({ width, height, targetUrl, source, signal, now = () => performance.now(),
   controllerFactory = async options => {
@@ -8,7 +9,9 @@ export async function createImageTracker({ width, height, targetUrl, source, sig
   const anchor = new THREE.Group();
   anchor.visible = false;
   anchor.matrixAutoUpdate = false;
+  const pose = createTrackedPose(anchor, { now });
   const postMatrix = new THREE.Matrix4();
+  const measuredMatrix = new THREE.Matrix4();
   let disposed = false, running = false, processing = false, released = false, releaseTimer;
   let controller;
   let lastProgress = 0, processedFrames = 0;
@@ -20,7 +23,7 @@ export async function createImageTracker({ width, height, targetUrl, source, sig
   };
   const dispose = () => {
     disposed = true;
-    anchor.visible = false;
+    pose.reset();
     controller?.stopProcessVideo();
     if (!processing) release();
     else releaseTimer = setTimeout(release, 2000);
@@ -44,8 +47,8 @@ export async function createImageTracker({ width, height, targetUrl, source, sig
           return;
         }
         if (disposed || data.type !== 'updateMatrix' || data.targetIndex !== 0) return;
-        anchor.visible = data.worldMatrix !== null;
-        if (anchor.visible) anchor.matrix.fromArray(data.worldMatrix).multiply(postMatrix);
+        if (data.worldMatrix === null) pose.lose();
+        else if (!pose.sample(measuredMatrix.fromArray(data.worldMatrix).multiply(postMatrix))) pose.lose();
       },
     });
     abort();
@@ -70,7 +73,7 @@ export async function createImageTracker({ width, height, targetUrl, source, sig
           running = true; processing = true;
           controller.processVideo(source);
         }
-        return !disposed && anchor.visible;
+        return !disposed && pose.update();
       },
       dispose,
     };

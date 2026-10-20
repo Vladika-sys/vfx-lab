@@ -23,6 +23,7 @@ try {
       let pass=false;
       do {
         await new Promise(requestAnimationFrame);
+        tracker.update();
         const center = new Vector3().setFromMatrixPosition(tracker.anchor.matrix).applyMatrix4(tracker.projectionMatrix);
         const distance = Math.hypot((center.x + 1) * width / 2 - width * (.5 + shift), (1 - center.y) * height / 2 - height * .5);
         if (tracker.anchor.visible === present && (!present || distance < 12)) { pass=true; break; }

@@ -3,6 +3,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createImageTracker } from './image-tracking.js';
 import { createCoffeeEffect } from './coffee-effect.js';
 import { createTargetSound } from './target-sound.js';
+import { fitCameraCover } from './camera-cover.js';
 import './style.css';
 
 const viewport = document.querySelector('#target-viewport');
@@ -20,11 +21,13 @@ let generation = 0, session = null, pending = null, paused = false, muted = fals
 
 function fit() {
   if (!session || !video.videoWidth) return;
-  const ratio = Math.max(viewport.clientWidth / video.videoWidth, viewport.clientHeight / video.videoHeight);
-  const width = Math.round(video.videoWidth * ratio), height = Math.round(video.videoHeight * ratio);
-  for (const element of [video, canvas]) {
-    element.style.width = `${width}px`; element.style.height = `${height}px`;
-  }
+  const width = Math.max(1, viewport.clientWidth), height = Math.max(1, viewport.clientHeight);
+  const fitted = fitCameraCover({ videoWidth: video.videoWidth, videoHeight: video.videoHeight,
+    width, height, projectionMatrix: session.tracker.projectionMatrix });
+  video.style.width = `${fitted.coverWidth}px`; video.style.height = `${fitted.coverHeight}px`;
+  canvas.style.width = `${width}px`; canvas.style.height = `${height}px`;
+  session.camera.projectionMatrix.copy(fitted.projectionMatrix);
+  session.camera.projectionMatrixInverse.copy(fitted.projectionMatrix).invert();
   session.renderer.setSize(width, height, false);
 }
 
@@ -60,20 +63,17 @@ async function start() {
     catch { sound?.close(); sound = null; }
     if (!current()) { cleanup(); return; }
     stream = await navigator.mediaDevices.getUserMedia({ audio: false,
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } });
     if (!current()) { cleanup(); return; }
     video.srcObject = stream; video.hidden = false;
     await video.play();
     if (!current()) { cleanup(); return; }
     if (!video.videoWidth) throw new Error('Camera nu furnizează imagini. Reîncearcă.');
-    const source = document.createElement('canvas');
-    const factor = 640 / Math.max(video.videoWidth, video.videoHeight);
-    source.width = Math.round(video.videoWidth * factor); source.height = Math.round(video.videoHeight * factor);
-    const context = source.getContext('2d', { willReadFrequently: true });
-    context.drawImage(video, 0, 0, source.width, source.height);
+    const factor = Math.min(1, 640 / Math.max(video.videoWidth, video.videoHeight));
+    video.width = Math.round(video.videoWidth * factor); video.height = Math.round(video.videoHeight * factor);
     const timeout = setTimeout(() => abort.abort(), 45000);
     try {
-      tracker = await createImageTracker({ width: source.width, height: source.height, source,
+      tracker = await createImageTracker({ width: video.width, height: video.height, source: video,
         signal: abort.signal, targetUrl: `${import.meta.env.BASE_URL}assets/target/cafea.mind` });
     } finally { clearTimeout(timeout); }
     if (!current()) { cleanup(); return; }
@@ -81,7 +81,7 @@ async function start() {
     camera.projectionMatrix.copy(tracker.projectionMatrix);
     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     renderer.setClearColor(0x000000, 0); renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;
     const generator = new THREE.PMREMGenerator(renderer), room = new RoomEnvironment();
@@ -89,7 +89,7 @@ async function start() {
     scene.environment = environment.texture;
     scene.add(new THREE.HemisphereLight(0xffffff, 0x615b47, 2));
     const light = new THREE.DirectionalLight(0xfff4db, 2.6); light.position.set(1, 3, 4); scene.add(light);
-    effect = createCoffeeEffect(); tracker.anchor.add(effect.group); scene.add(tracker.anchor);
+    effect = createCoffeeEffect({ pixelRatio: renderer.getPixelRatio() }); tracker.anchor.add(effect.group); scene.add(tracker.anchor);
     session = { tracker, renderer, effect, environment, sound, camera, frame: 0, aspect: video.videoWidth / video.videoHeight };
     owned = true; pending = null;
     paused = false;
@@ -103,8 +103,7 @@ async function start() {
     const frame = now => {
       if (!session || !current()) return;
       session.frame = requestAnimationFrame(frame);
-      const delta = Math.min(.05, (now - previous) / 1000); previous = now;
-      context.drawImage(video, 0, 0, source.width, source.height);
+      const delta = Math.min(.1, (now - previous) / 1000); previous = now;
       let tracked;
       try { tracked = tracker.update(); }
       catch (failure) { stop(); error.textContent = failure.message; error.hidden = false; return; }
