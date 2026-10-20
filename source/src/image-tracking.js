@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export async function createImageTracker({ width, height, targetUrl, source, signal,
+export async function createImageTracker({ width, height, targetUrl, source, signal, now = () => performance.now(),
   controllerFactory = async options => {
     const { Controller } = await import('mind-ar/dist/mindar-image.prod.js');
     return new Controller(options);
@@ -11,6 +11,7 @@ export async function createImageTracker({ width, height, targetUrl, source, sig
   const postMatrix = new THREE.Matrix4();
   let disposed = false, running = false, processing = false, released = false, releaseTimer;
   let controller;
+  let lastProgress = 0, processedFrames = 0;
   const release = () => {
     if (released || !controller) return;
     released = true;
@@ -27,7 +28,7 @@ export async function createImageTracker({ width, height, targetUrl, source, sig
   const abort = () => { if (signal?.aborted) throw new DOMException('Operație anulată.', 'AbortError'); };
   try {
     abort();
-    const response = await fetchTarget(targetUrl, { signal });
+    const response = await fetchTarget(targetUrl, { signal, cache: 'no-store' });
     if (!response.ok) throw new Error('Imaginea-țintă nu a putut fi încărcată.');
     const buffer = await response.arrayBuffer();
     abort();
@@ -36,6 +37,7 @@ export async function createImageTracker({ width, height, targetUrl, source, sig
       filterMinCF: .001, filterBeta: 1000,
       onUpdate(data) {
         if (data.type === 'processDone') {
+          lastProgress = now(); processedFrames++;
           processing = false;
           if (disposed) release();
           else processing = running;
@@ -57,8 +59,14 @@ export async function createImageTracker({ width, height, targetUrl, source, sig
     abort();
     return {
       anchor, projectionMatrix, targetAspect: imageWidth / imageHeight,
+      get processedFrames() { return processedFrames; },
       update() {
+        if (!disposed && running && now() - lastProgress > 15000) {
+          dispose();
+          throw new Error('Recunoașterea imaginii nu răspunde. Repornește camera; dacă problema continuă, încearcă în Chrome sau Safari.');
+        }
         if (!disposed && !running) {
+          lastProgress = now();
           running = true; processing = true;
           controller.processVideo(source);
         }

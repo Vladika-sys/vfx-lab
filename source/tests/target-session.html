@@ -1,7 +1,7 @@
 <!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Etichetă AR — cameră simulată</title></head><body>
 <script type="module">
 const built=new URLSearchParams(location.search).has('build');
-const html=await(await fetch(built?'/dist/target.html':'/target.html')).text();
+const html=await(await fetch(built?'/dist/cafea.html':'/cafea.html')).text();
 const parsed=new DOMParser().parseFromString(html,'text/html');
 const base=document.createElement('base');base.href=built?'/dist/':'/';document.head.appendChild(base);
 for(const link of parsed.head.querySelectorAll('link[rel="stylesheet"]'))document.head.appendChild(link.cloneNode(true));

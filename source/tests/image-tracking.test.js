@@ -43,3 +43,15 @@ test('cancelling initialization releases the new tracker', async () => {
   await assert.rejects(createImageTracker(f.args), { name: 'AbortError' });
   assert.equal(f.calls.dispose, 1);
 });
+
+test('a stalled recognition loop reports an error instead of leaving an inactive camera', async () => {
+  let time = 0;
+  const f = fixture({ now: () => time }), tracker = await createImageTracker(f.args);
+  tracker.update();
+  time = 14000; f.send({ type: 'processDone' });
+  assert.equal(tracker.processedFrames, 1);
+  time = 28000; assert.equal(tracker.update(), false);
+  time = 30001; assert.throws(() => tracker.update(), /nu răspunde/);
+  f.send({ type: 'processDone' });
+  assert.equal(f.calls.dispose, 1);
+});

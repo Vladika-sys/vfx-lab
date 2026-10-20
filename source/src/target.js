@@ -105,10 +105,15 @@ async function start() {
       session.frame = requestAnimationFrame(frame);
       const delta = Math.min(.05, (now - previous) / 1000); previous = now;
       context.drawImage(video, 0, 0, source.width, source.height);
-      const tracked = tracker.update();
+      let tracked;
+      try { tracked = tracker.update(); }
+      catch (failure) { stop(); error.textContent = failure.message; error.hidden = false; return; }
       if (tracked && !wasTracked) effect.found();
       wasTracked = tracked;
       status.hidden = tracked;
+      if (!tracked) status.textContent = tracker.processedFrames === 0
+        ? 'Se pornește recunoașterea imaginii…'
+        : 'Încadrează fotografia întreagă, bine luminată.';
       effect.group.scale.setScalar(Math.min(1, 1 / tracker.targetAspect) * Number(scale.value) / 100);
       if (tracked && !paused) effect.update(delta);
       sound?.setActive(tracked && !paused && !muted);

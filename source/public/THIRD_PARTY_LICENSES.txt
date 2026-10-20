@@ -88,12 +88,9 @@ Apache License 2.0: full text in licenses/TensorFlow.txt.
 Original license notices are retained in the distributed bundle.
 
 Coffee target and sound
-assets/target/eticheta-cafea.svg and .png are original demonstration artwork.
-assets/target/eticheta-cafea.mind contains descriptors compiled from that artwork.
 The active target assets/target/coffe.jpg is the photograph supplied by the user.
 Its author and redistribution license were not supplied; it is not covered
 by the software or CC0 licenses above. assets/target/cafea.mind contains
-descriptors compiled from that photograph. The earlier illustrated label
-is retained as an inactive example.
+descriptors compiled from that photograph.
 The target effect's soundtrack is generated locally by src/target-sound.js;
 it is not a third-party recording and does not use the hora.m4a file.
