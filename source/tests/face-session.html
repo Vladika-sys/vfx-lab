@@ -1,0 +1,33 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mască — cameră simulată</title></head><body>
+<script type="module">
+const built = new URLSearchParams(location.search).has('build');
+const html = await (await fetch(built ? '/dist/face.html' : '/face.html')).text();
+const parsed = new DOMParser().parseFromString(html, 'text/html');
+const base = document.createElement('base'); base.href = built ? '/dist/' : '/'; document.head.append(base);
+for (const link of parsed.head.querySelectorAll('link[rel="stylesheet"]')) document.head.append(link.cloneNode(true));
+document.body.className = 'ar-page'; document.body.innerHTML = parsed.body.innerHTML;
+document.querySelectorAll('script').forEach(script => script.remove());
+const source = document.createElement('canvas'); source.width = 960; source.height = 720; const context = source.getContext('2d');
+const photo = new Image(); photo.src = '/tests/fixtures/astronaut.png'; await photo.decode();
+let visible = true, moving = false, tilt = false;
+function draw(now = 0) {
+  context.fillStyle = '#79756c'; context.fillRect(0, 0, 960, 720);
+  if (visible) {
+    context.save(); context.translate(480 + (moving ? Math.sin(now * .001) * 100 : 0), 350);
+    context.rotate(tilt ? .22 : 0); context.drawImage(photo, 125, 0, 210, 260, -210, -260, 420, 520); context.restore();
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+let stream;
+Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: async () => (stream = source.captureStream(30)) } });
+const controls = document.createElement('div'); controls.style.cssText = 'position:fixed;top:10px;left:10px;font:12px system-ui;z-index:30;color:white;background:#222b;padding:5px';
+controls.innerHTML = '<span>Probă locală · fotografie NASA</span><button id="test-face" style="width:auto">Ascunde fața</button><button id="test-motion" style="width:auto">Mișcare</button><button id="test-tilt" style="width:auto">Înclină</button><output id="test-stream"></output>';
+document.body.append(controls);
+document.querySelector('#test-face').onclick = event => { visible = !visible; event.target.textContent = visible ? 'Ascunde fața' : 'Arată fața'; };
+document.querySelector('#test-motion').onclick = event => { moving = !moving; event.target.textContent = moving ? 'Oprește mișcarea' : 'Mișcare'; };
+document.querySelector('#test-tilt').onclick = () => { tilt = !tilt; };
+setInterval(() => { document.querySelector('#test-stream').textContent = stream?.getTracks().map(track => track.readyState).join(',') || 'nepornită'; }, 500);
+const script = [...parsed.querySelectorAll('script[type="module"]')].find(element => element.getAttribute('src')?.includes('/assets/face-'));
+await import(/* @vite-ignore */ built ? new URL(script.getAttribute('src'), document.baseURI).href : '/src/face.js');
+</script></body></html>

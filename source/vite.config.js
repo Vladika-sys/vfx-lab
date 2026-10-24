@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         vfx: fileURLToPath(new URL('./index.html', import.meta.url)),
         ar: fileURLToPath(new URL('./ar.html', import.meta.url)),
+        face: fileURLToPath(new URL('./face.html', import.meta.url)),
         target: fileURLToPath(new URL('./cafea.html', import.meta.url)),
         targetRedirect: fileURLToPath(new URL('./target.html', import.meta.url)),
       },

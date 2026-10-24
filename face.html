@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#202322" />
+  <title>Mască · AR</title>
+  <script type="module" crossorigin src="./assets/face-Cmnwxkl7.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/style-CxobxTpq.js">
+  <link rel="modulepreload" crossorigin href="./assets/RoomEnvironment-BMW5s9oy.js">
+  <link rel="modulepreload" crossorigin href="./assets/camera-cover-FQWCT23a.js">
+  <link rel="stylesheet" crossorigin href="./assets/style-CaxTHnlI.css">
+</head>
+<body class="ar-page">
+  <main id="face-viewport">
+    <video id="face-video" autoplay muted playsinline hidden aria-label="Camera frontală"></video>
+    <canvas id="face-stage" hidden aria-label="Mască 3D care urmărește fața"></canvas>
+  </main>
+  <section class="ar-start" id="face-start" aria-label="Pornire mască AR">
+    <h1>Mască din lemn</h1>
+    <p>Privește camera și întoarce ușor capul. Deschide gura pentru a mișca maxilarul măștii.</p>
+    <div class="ar-start-actions"><button id="start-face" type="button">Pornește camera</button></div>
+    <p class="ar-privacy">Nu este nevoie de reper. Imaginea camerei este prelucrată pe dispozitiv, fără încărcare pe server.</p>
+    <p id="face-error" role="alert" hidden></p>
+    <a href="./ar.html">Horă</a> · <a href="./cafea.html">Cafea AR</a> · <a href="./">VFX</a>
+  </section>
+  <p id="face-status" role="status" hidden>Privește camera.</p>
+  <nav id="face-controls" class="controls face-controls" aria-label="Comenzi mască AR" hidden>
+    <button id="face-toggle" type="button" title="Ascunde masca" aria-label="Ascunde masca" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <label class="slider" title="Lățimea măștii"><input id="face-width" type="range" min="90" max="110" value="100" aria-label="Lățimea măștii" /></label>
+    <a href="./ar.html">Horă</a><a href="./cafea.html">Cafea</a><a href="./">VFX</a>
+    <button id="stop-face" type="button" title="Oprește camera" aria-label="Oprește camera"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+  </nav>
+</body>
+</html>

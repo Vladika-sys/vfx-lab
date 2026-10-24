@@ -1,6 +1,6 @@
 # VFX Lab
 
-Aplicație Three.js cu 14 efecte vizuale, o horă interactivă ancorată de reperul Hiro și un efect AR declanșat de o fotografie cu cafea.
+Aplicație Three.js cu 14 efecte vizuale, o horă interactivă ancorată de reperul Hiro, un efect AR declanșat de o fotografie cu cafea și o mască 3D cu urmărirea feței.
 
 ## Pornire
 
@@ -26,6 +26,22 @@ Adresa GitHub Pages: https://vladika-sys.github.io/vfx-lab/
 Pentru actualizări, salvează sursa în `source/`, rulează compilarea și copiază conținutul `source/dist/` în rădăcina depozitului, fără să ștergi `source/`. GitHub Pages folosește ramura `main`, directorul `/ (root)`. Publicarea se termină în fila Actions; modificările din sursă nu actualizează singure site-ul.
 
 ## Realitate augmentată
+
+### Mască pe față — model construit în Blender
+
+`face.html` folosește camera frontală. Masca din lemn urmărește o singură față, fără Hiro sau altă imagine-țintă. Întoarcerea și înclinarea capului schimbă poziția modelului 3D; coeficientul `jawOpen` controlează maxilarul separat, până la 22°. Butonul cu ochi ascunde masca, iar glisorul reglează lățimea între 90% și 110%. La pierderea feței, masca dispare după o scurtă toleranță de 100 ms. Oprirea, schimbarea paginii sau trecerea aplicației în fundal opresc camera și eliberează modulul de urmărire.
+
+Proiectul editabil este `blender/masca_lemn/masca_lemn.blend`; exportul folosit în aplicație este `public/assets/face/masca_lemn.glb`. Modelul are 14.320 de triunghiuri, texturi incluse și un maxilar articulat. Forma de referință provine din geometria canonică MediaPipe, modificată în Blender prin relief, grosime, găuri pentru ochi, separarea maxilarului și ornamente. Nu este o mască decorată descărcată gata făcută. Fișierele de construcție, referința și verificările sunt lângă proiectul Blender.
+
+`src/face-worker.js` rulează MediaPipe Face Landmarker 1.1.0 într-un Web Worker, cu o singură imagine în prelucrare. Camera este redusă la maximum 640 px pe latura lungă pentru recunoaștere, nu pentru afișare. Se încearcă GPU, apoi CPU dacă GPU nu este disponibil. Desenarea Three.js rămâne independentă de recunoaștere. Camera nu este trimisă către un serviciu; modelul și fișierul GLB sunt descărcate de pe site, iar runtime-ul WASM este încărcat din jsDelivr, cu versiunea fixată la 1.1.0.
+
+`src/face-pose.js` folosește rotația estimată de MediaPipe și potrivește translația prin 15 repere stabile din partea superioară a feței. Potrivirea este calculată față de proiecția camerei virtuale; nu presupune că parametrii interni MediaPipe coincid cu aceștia. Scena este exprimată în centimetri, iar GLB, exportat în metri, este scalat explicit cu 100. Fața canonică și un volum aproximativ al capului scriu numai în bufferul de adâncime, pentru ascunderea părților din spate. Video-ul și rezultatul 3D sunt oglindite împreună, numai la afișare. Poziția și rotația sunt interpolate la fiecare cadru; expresia maxilarului are filtrare proprie.
+
+Este o mască rigidă cu o singură articulație, nu o reconstrucție exactă a fiecărei fețe. Nu deformează sprâncenele sau obrajii. Ochii reali rămân vizibili prin deschideri. La profil accentuat, lumină slabă ori acoperirea feței, urmărirea poate pierde precizia. Ascunderea după cap este aproximativă; nu sunt recunoscute mâinile și obiectele din fața măștii. Performanța pe telefon trebuie verificată pe dispozitivul folosit la prezentare.
+
+`/tests/face-session.html` verifică fluxul complet cu o cameră simulată, iar `?build=1` folosește versiunea compilată. Fotografia NASA din domeniul public este documentată în `tests/fixtures/README.md`; nu este inclusă în site-ul compilat. Testele automate verifică potrivirea la mai multe unghiuri și proporții ale imaginii, controlul maxilarului, exportul GLB, anularea inițializării și evitarea acumulării cadrelor.
+
+Surse: [Face Landmarker pentru web](https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/web_js), [modelul Face Landmarker float16, versiunea 1](https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task), [geometria facială MediaPipe](https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/modules/face_geometry/data/canonical_face_model.obj). Licența Apache 2.0 este inclusă în `public/assets/face/MEDIAPIPE_LICENSE.txt` și lângă referința Blender.
 
 ### Efect declanșat de imagine — fotografia cu cafea
 

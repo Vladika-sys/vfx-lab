@@ -89,3 +89,11 @@ button:disabled { opacity: .4; cursor: default; }
 .target-controls button { flex-shrink: 0; }
 .target-controls a { white-space: nowrap; }
 @media (max-height: 650px) { #target-start { padding: 18px; } #target-start .target-thumb { width: 108px; height: auto; float: right; margin: 0 0 8px 12px; } }
+#face-viewport { position: fixed; inset: 0; overflow: hidden; }
+#face-video, #face-stage { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scaleX(-1); }
+#face-error { color: #ebc3b4; }
+#face-status { position: fixed; top: max(16px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); font-size: 13px; padding: 9px 14px; background: #252725e8; border-radius: 4px; max-width: calc(100% - 24px); text-align: center; }
+.face-controls { gap: 10px; width: min(400px, calc(100% - 24px)); justify-content: space-between; flex-wrap: nowrap; }
+.face-controls .slider { flex: 1; min-width: 35px; order: 0; }
+.face-controls input { width: 100%; }
+.face-controls button { flex-shrink: 0; }

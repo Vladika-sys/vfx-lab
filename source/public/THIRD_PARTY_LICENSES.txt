@@ -94,3 +94,16 @@ by the software or CC0 licenses above. assets/target/cafea.mind contains
 descriptors compiled from that photograph.
 The target effect's soundtrack is generated locally by src/target-sound.js;
 it is not a third-party recording and does not use the hora.m4a file.
+
+Face-tracking mask
+The mask was modeled and textured in Blender for this project. The canonical
+face reference is derived from MediaPipe (Apache License 2.0), with changes
+to the relief, thickness, eye openings, jaw and ornament geometry.
+Canonical reference:
+https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/modules/face_geometry/data/canonical_face_model.obj
+Full license: assets/face/MEDIAPIPE_LICENSE.txt.
+MediaPipe Face Landmarker float16 model, pinned version 1:
+https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+The model is served locally as assets/face/face_landmarker.task.
+MediaPipe Tasks Vision 1.1.0 performs face inference on the device;
+the application does not upload camera frames or face landmarks.
