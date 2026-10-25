@@ -44,15 +44,20 @@ export function createFaceGlow(renderer) {
       for (const target of [light, ping, blur]) target.setSize(smallWidth, smallHeight);
     },
     render(scene, camera) {
-      const saved = [];
+      const saved = [], glowPass = [];
       renderer.setRenderTarget(base); renderer.clear(); renderer.render(scene, camera);
       scene.traverse(object => {
         if (!object.isMesh || !object.material) return;
+        if (object.userData.selectiveGlow === 'self') {
+          const uniform = object.material.uniforms?.uGlowPass;
+          if (uniform) { glowPass.push(uniform); uniform.value = 1; }
+          return;
+        }
         saved.push([object, object.material]);
         object.material = Array.isArray(object.material) ? object.material.map(glowMaterial) : glowMaterial(object.material);
       });
       try { renderer.setRenderTarget(light); renderer.clear(); renderer.render(scene, camera); }
-      finally { for (const [object, material] of saved) object.material = material; }
+      finally { for (const [object, material] of saved) object.material = material; glowPass.forEach(uniform => { uniform.value = 0; }); }
       quad.material = blurMaterial; blurMaterial.uniforms.image.value = light.texture;
       blurMaterial.uniforms.direction.value.set(1 / smallWidth, 0);
       renderer.setRenderTarget(ping); renderer.clear(); quad.render(renderer);

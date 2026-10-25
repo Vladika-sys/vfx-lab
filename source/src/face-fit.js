@@ -30,7 +30,9 @@ export function solveJawFit({ landmarks, pose, camera, reference }) {
   const predicted = chinReference.clone().sub(HINGE).applyAxisAngle(new Vector3(1, 0, 0), angle).add(HINGE);
   const residual = chin.clone().sub(predicted);
   residual.set(clamp(residual.x, -1.2, 1.2), clamp(residual.y, -4, 3), clamp(residual.z, -.8, 2.8));
-  return { amount, angle, residual, mouthRatio: ratio };
+  const mouth = upper.clone().add(lower).multiplyScalar(.5);
+  mouth.z = 7.4;
+  return { amount, angle, residual, mouthRatio: ratio, mouth };
 }
 
 export function createMaskRig(model) {

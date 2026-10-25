@@ -9,21 +9,25 @@
 <body class="ar-page">
   <main id="face-viewport">
     <video id="face-video" autoplay muted playsinline hidden aria-label="Camera frontală"></video>
+    <div id="face-atmosphere" aria-hidden="true" hidden></div>
     <canvas id="face-stage" hidden aria-label="Mască 3D care urmărește fața"></canvas>
   </main>
   <section class="ar-start" id="face-start" aria-label="Pornire mască AR">
     <h1>Ritual</h1>
-    <p>Privește camera și întoarce ușor capul. Deschide gura pentru a mișca maxilarul măștii.</p>
+    <p>Privește camera și întoarce ușor capul. Activează microfonul din bara de jos și suflă spre telefon pentru foc.</p>
     <div class="ar-start-actions"><button id="start-face" type="button">Pornește camera</button></div>
-    <p class="ar-privacy">Nu este nevoie de reper. Imaginea camerei este prelucrată pe dispozitiv, fără încărcare pe server.</p>
+    <p class="ar-privacy">Camera și microfonul sunt prelucrate local, fără înregistrare sau încărcare pe server. Focul merge și ținând apăsat butonul cu flacără.</p>
     <p id="face-error" role="alert" hidden></p>
     <a href="./ar.html">Horă</a> · <a href="./cafea.html">Cafea AR</a> · <a href="./">VFX</a>
   </section>
   <p id="face-status" role="status" hidden>Privește camera.</p>
   <nav id="face-controls" class="controls face-controls" aria-label="Comenzi mască AR" hidden>
     <button id="face-toggle" type="button" title="Ascunde masca" aria-label="Ascunde masca" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <button id="face-mic" type="button" title="Activează microfonul pentru suflat" aria-label="Activează microfonul pentru suflat" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg></button>
+    <button id="face-fire" type="button" title="Ține apăsat pentru foc" aria-label="Ține apăsat pentru foc" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2c1 6-5 6-2 11 2-1 3-3 3-5 5 4 7 8 3 12-3 3-10 2-12-2C1 11 9 9 8 5c2 1 3 3 3 5"/></svg></button>
+    <button id="face-sound" type="button" title="Oprește muzica" aria-label="Oprește muzica" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13M9 7l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg></button>
     <label class="slider" title="Lățimea măștii"><input id="face-width" type="range" min="90" max="110" value="100" aria-label="Lățimea măștii" /></label>
-    <a href="./ar.html">Horă</a><a href="./cafea.html">Cafea</a><a href="./">VFX</a>
+    <a href="./">VFX</a>
     <button id="stop-face" type="button" title="Oprește camera" aria-label="Oprește camera"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
   </nav>
   <script type="module" src="/src/face.js"></script>

@@ -107,3 +107,10 @@ https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/
 The model is served locally as assets/face/face_landmarker.task.
 MediaPipe Tasks Vision 1.1.0 performs face inference on the device;
 the application does not upload camera frames or face landmarks.
+
+Ritual background music
+assets/face/halloween-waltz.mp3 is the recording supplied by the user as
+bombinsound-halloween-suspense-horror-version-5-halloween-waltz-619342.mp3.
+The filename identifies BombinSound and the title Halloween Waltz;
+no license document or original source URL was supplied with the file.
+The recording is not covered by the software, Apache or CC0 licenses above.

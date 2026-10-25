@@ -19,15 +19,62 @@ function draw(now = 0) {
   requestAnimationFrame(draw);
 }
 draw();
-let stream;
-Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: async () => (stream = source.captureStream(30)) } });
+let stream, microphone, micContext, noiseGain, voiceGain, denyMicrophone = false;
+let measuredContext = null;
+const NativeContext = window.AudioContext;
+window.AudioContext = class extends NativeContext {
+  createGain() {
+    const gain = super.createGain();
+    if (!measuredContext || measuredContext.state === 'closed') {
+      measuredContext = this;
+      const analyser = this.createAnalyser(); analyser.fftSize = 1024; gain.connect(analyser);
+      const data = new Float32Array(analyser.fftSize);
+      const meter = () => {
+        analyser.getFloatTimeDomainData(data);
+        const rms = Math.sqrt(data.reduce((sum, value) => sum + value * value, 0) / data.length);
+        document.querySelector('#test-audio').textContent = `Muzică: ${rms > .0001 ? 'activă' : 'oprită'} (${rms.toFixed(4)})`;
+        if (this.state !== 'closed') requestAnimationFrame(meter);
+      }; requestAnimationFrame(meter);
+    }
+    return gain;
+  }
+};
+async function fakeMicrophone() {
+  if (denyMicrophone) throw new DOMException('Refuz de test.', 'NotAllowedError');
+  if (microphone?.getAudioTracks().some(track => track.readyState === 'live')) return microphone;
+  micContext = new NativeContext(); const destination = micContext.createMediaStreamDestination();
+  const buffer = micContext.createBuffer(1, micContext.sampleRate * 2, micContext.sampleRate), data = buffer.getChannelData(0);
+  let seed = 42;
+  for (let i = 0; i < data.length; i++) { seed = (seed * 1664525 + 1013904223) >>> 0; data[i] = seed / 2147483648 - 1; }
+  const noise = micContext.createBufferSource(); noise.buffer = buffer; noise.loop = true;
+  noiseGain = micContext.createGain(); noiseGain.gain.value = 0;
+  const lowpass = micContext.createBiquadFilter(); lowpass.type = 'lowpass'; lowpass.frequency.value = 5000;
+  noise.connect(lowpass); lowpass.connect(noiseGain); noiseGain.connect(destination); noise.start();
+  const voice = micContext.createOscillator(); voice.type = 'sawtooth'; voice.frequency.value = 220;
+  voiceGain = micContext.createGain(); voiceGain.gain.value = 0; voice.connect(voiceGain); voiceGain.connect(destination); voice.start();
+  await micContext.resume(); microphone = destination.stream; return microphone;
+}
+Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: async constraints => constraints.audio ? fakeMicrophone() : (stream = source.captureStream(30)) } });
 const controls = document.createElement('div'); controls.style.cssText = 'position:fixed;top:10px;left:10px;font:12px system-ui;z-index:30;color:white;background:#222b;padding:5px';
-controls.innerHTML = '<span>Probă locală · fotografie NASA</span><button id="test-face" style="width:auto">Ascunde fața</button><button id="test-motion" style="width:auto">Mișcare</button><button id="test-tilt" style="width:auto">Înclină</button><output id="test-stream"></output>';
+controls.innerHTML = '<span>Probă locală · fotografie NASA</span><button id="test-face" style="width:auto">Ascunde fața</button><button id="test-motion" style="width:auto">Mișcare</button><button id="test-tilt" style="width:auto">Înclină</button><button id="test-breath" style="width:auto">Suflat simulat</button><button id="test-voice" style="width:auto">Voce simulată</button><button id="test-deny" style="width:auto">Refuză microfonul</button><output id="test-stream"></output><br><output id="test-audio">Muzică: oprită</output><br><output id="test-mic"></output>';
 document.body.append(controls);
 document.querySelector('#test-face').onclick = event => { visible = !visible; event.target.textContent = visible ? 'Ascunde fața' : 'Arată fața'; };
 document.querySelector('#test-motion').onclick = event => { moving = !moving; event.target.textContent = moving ? 'Oprește mișcarea' : 'Mișcare'; };
 document.querySelector('#test-tilt').onclick = () => { tilt = !tilt; };
+document.querySelector('#test-breath').onclick = event => {
+  if (!noiseGain) return; const active = noiseGain.gain.value === 0;
+  noiseGain.gain.value = active ? .28 : 0; voiceGain.gain.value = 0;
+  event.target.textContent = active ? 'Oprește suflatul' : 'Suflat simulat';
+};
+document.querySelector('#test-voice').onclick = event => {
+  if (!voiceGain) return; const active = voiceGain.gain.value === 0;
+  voiceGain.gain.value = active ? .15 : 0; noiseGain.gain.value = 0;
+  event.target.textContent = active ? 'Oprește vocea' : 'Voce simulată';
+};
+document.querySelector('#test-deny').onclick = event => { denyMicrophone = !denyMicrophone; event.target.textContent = denyMicrophone ? 'Permite microfonul' : 'Refuză microfonul'; };
 setInterval(() => { document.querySelector('#test-stream').textContent = stream?.getTracks().map(track => track.readyState).join(',') || 'nepornită'; }, 500);
+setInterval(() => { document.querySelector('#test-mic').textContent = `Mic simulat: ${microphone?.getAudioTracks().map(track => track.readyState).join(',') || 'oprit'}`; }, 500);
+addEventListener('pagehide', () => { microphone?.getTracks().forEach(track => track.stop()); micContext?.close(); });
 const script = [...parsed.querySelectorAll('script[type="module"]')].find(element => element.getAttribute('src')?.includes('/assets/face-'));
 await import(/* @vite-ignore */ built ? new URL(script.getAttribute('src'), document.baseURI).href : '/src/face.js');
 </script></body></html>

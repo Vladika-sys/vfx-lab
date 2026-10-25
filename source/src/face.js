@@ -5,6 +5,8 @@ import { createFaceTracker } from './face-tracking.js';
 import { fitFacePose } from './face-pose.js';
 import { createMaskRig, solveJawFit } from './face-fit.js';
 import { createFaceGlow } from './face-glow.js';
+import { createMouthFire } from './face-fire.js';
+import { createFaceAudio } from './face-audio.js';
 import { createTrackedPose } from './image-pose.js';
 import { fitCameraCover } from './camera-cover.js';
 import './style.css';
@@ -13,7 +15,9 @@ const $ = selector => document.querySelector(selector);
 const viewport = $('#face-viewport'), video = $('#face-video'), canvas = $('#face-stage');
 const panel = $('#face-start'), toolbar = $('#face-controls'), status = $('#face-status');
 const error = $('#face-error'), startButton = $('#start-face'), toggle = $('#face-toggle'), widthControl = $('#face-width');
-let generation = 0, pending = null, session = null, showMask = true;
+const atmosphere = $('#face-atmosphere'), micButton = $('#face-mic'), fireButton = $('#face-fire'), soundButton = $('#face-sound');
+let generation = 0, pending = null, session = null, showMask = true, manualFire = false, burstUntil = 0;
+let notice = '', noticeUntil = 0;
 const asset = name => `${import.meta.env.BASE_URL}assets/face/${name}`;
 
 function disposeScene(scene) {
@@ -47,9 +51,12 @@ function stop() {
   const s = session; session = null;
   if (s) {
     cancelAnimationFrame(s.frame); s.tracker.close(); s.pose.reset(); s.rig.reset(); s.glow.dispose();
+    s.audio?.close(); s.fire.reset();
     disposeScene(s.scene); s.environment.dispose(); s.renderer.dispose();
   }
   video.srcObject?.getTracks().forEach(track => track.stop()); video.srcObject = null;
+  manualFire = false; burstUntil = 0; atmosphere.hidden = true; video.classList.remove('horror-active');
+  fireButton.setAttribute('aria-pressed', 'false'); micButton.disabled = false;
   video.hidden = canvas.hidden = toolbar.hidden = status.hidden = true;
   panel.hidden = false; startButton.disabled = false; startButton.textContent = 'Pornește camera';
 }
@@ -64,15 +71,17 @@ async function start() {
   const attempt = ++generation, abort = new AbortController(); pending = abort;
   const current = () => attempt === generation && !abort.signal.aborted;
   startButton.disabled = true; startButton.textContent = 'Pregătire…'; error.hidden = true;
-  let stream, tracker, renderer, scene, environment, glow, owned = false;
+  let stream, tracker, renderer, scene, environment, glow, audio, owned = false;
   const cleanup = () => {
-    tracker?.close(); glow?.dispose(); disposeScene(scene); environment?.dispose(); renderer?.dispose();
+    tracker?.close(); audio?.close(); glow?.dispose(); disposeScene(scene); environment?.dispose(); renderer?.dispose();
     stream?.getTracks().forEach(track => track.stop());
   };
   abort.signal.addEventListener('abort', () => { if (!owned) cleanup(); }, { once: true });
   try {
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || !window.Worker || !window.createImageBitmap)
       throw new Error('Deschide pagina prin HTTPS într-o versiune actuală de Chrome sau Safari.');
+    try { audio = createFaceAudio({ src: asset('halloween-waltz.mp3') }); audio.unlock().catch(() => {}); }
+    catch { audio?.close(); audio = null; }
     stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: {
       facingMode: { ideal: 'user' }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 },
     } });
@@ -83,8 +92,10 @@ async function start() {
     scene = new THREE.Scene();
     const camera = new THREE.Camera(), fitCamera = new THREE.PerspectiveCamera(55, video.videoWidth / video.videoHeight, 1, 1000);
     const anchor = new THREE.Group(), modelGroup = new THREE.Group(); anchor.add(modelGroup); scene.add(anchor);
+    const fire = createMouthFire(); modelGroup.add(fire.group);
     const pose = createTrackedPose(anchor, { lossGraceMs: 100 });
-    let lastResult = performance.now();
+    let lastResult = performance.now(), latestFit = null;
+    const mouth = new THREE.Vector3(0, -4.2, 7.4), center = new THREE.Vector3(), edge = new THREE.Vector3();
     const referenceResponse = await fetch(asset('reference.json'), { signal: abort.signal });
     if (!referenceResponse.ok) throw new Error('Reperul facial nu a putut fi încărcat.');
     const reference = await referenceResponse.json();
@@ -126,15 +137,21 @@ async function start() {
         if (matrix) {
           const snap = !anchor.visible;
           pose.sample(matrix);
-          rig.sample(solveJawFit({ landmarks: result.landmarks, pose: matrix, reference, camera: fitCamera }), snap);
+          latestFit = solveJawFit({ landmarks: result.landmarks, pose: matrix, reference, camera: fitCamera });
+          rig.sample(latestFit, snap);
+          if (latestFit?.mouth) mouth.copy(latestFit.mouth);
         } else pose.lose();
       },
       onError(failure) { if (current()) fail(failure); },
     });
     if (!current()) { cleanup(); return; }
-    session = { renderer, scene, environment, tracker, pose, rig, glow, fitCamera, camera, frame: 0 };
+    session = { renderer, scene, environment, tracker, pose, rig, glow, fire, audio, fitCamera, camera, frame: 0 };
     owned = true; pending = null; showMask = true;
     toggle.setAttribute('aria-pressed', 'true'); toggle.setAttribute('aria-label', 'Ascunde masca'); toggle.title = 'Ascunde masca';
+    micButton.disabled = soundButton.disabled = !audio;
+    micButton.setAttribute('aria-pressed', 'false'); micButton.title = 'Activează microfonul pentru suflat'; micButton.setAttribute('aria-label', micButton.title);
+    soundButton.setAttribute('aria-pressed', 'true'); soundButton.title = 'Oprește muzica'; soundButton.setAttribute('aria-label', soundButton.title);
+    notice = ''; noticeUntil = 0;
     panel.hidden = true; canvas.hidden = toolbar.hidden = status.hidden = false; fit();
     let previous = performance.now(), lastSubmitted = -Infinity, lastVideoTime = -1;
     const frame = now => {
@@ -149,8 +166,29 @@ async function start() {
       if (anchor.visible) rig.update(delta, now / 1000);
       modelGroup.scale.set(Number(widthControl.value) / 100, 1, 1);
       modelGroup.visible = showMask;
-      status.hidden = anchor.visible;
-      status.textContent = 'Privește camera, într-un loc bine luminat.';
+      const active = anchor.visible && showMask;
+      const breath = audio?.update(delta, active && latestFit?.mouthRatio > .035) || { level: 0 };
+      const desired = active ? Math.max(breath.level, manualFire || now < burstUntil ? 1 : 0) : 0;
+      const power = fire.update(delta, now / 1000, desired, mouth);
+      if (!active) { fire.reset(); manualFire = false; burstUntil = 0; }
+      fire.prepare(camera);
+      fireButton.setAttribute('aria-pressed', String(active && power > .12));
+      audio?.setActive(active);
+      if (audio?.musicError && soundButton.getAttribute('aria-pressed') === 'true') {
+        soundButton.setAttribute('aria-pressed', 'false'); soundButton.title = 'Pornește muzica'; soundButton.setAttribute('aria-label', soundButton.title);
+      }
+      atmosphere.hidden = !active; video.classList.toggle('horror-active', active);
+      if (active) {
+        anchor.updateWorldMatrix(true, true);
+        center.set(0, -.5, 4).applyMatrix4(anchor.matrixWorld).project(camera);
+        edge.set(8, -.5, 4).applyMatrix4(anchor.matrixWorld).project(camera);
+        const width = viewport.clientWidth, height = viewport.clientHeight, radius = Math.max(80, Math.abs(edge.x - center.x) * width * .85);
+        atmosphere.style.setProperty('--horror-x', `${(1 - center.x) * width / 2}px`);
+        atmosphere.style.setProperty('--horror-y', `${(1 - center.y) * height / 2}px`);
+        atmosphere.style.setProperty('--horror-rx', `${radius * 1.3}px`); atmosphere.style.setProperty('--horror-ry', `${radius * 1.65}px`);
+      }
+      status.hidden = anchor.visible && now > noticeUntil;
+      status.textContent = now < noticeUntil ? notice : 'Privește camera, într-un loc bine luminat.';
       if (anchor.visible && showMask) glow.render(scene, camera);
       else { renderer.setRenderTarget(null); renderer.render(scene, camera); }
     };
@@ -167,6 +205,41 @@ toggle.addEventListener('click', () => {
   const label = showMask ? 'Ascunde masca' : 'Arată masca';
   toggle.setAttribute('aria-pressed', String(showMask)); toggle.setAttribute('aria-label', label); toggle.title = label;
 });
+micButton.addEventListener('click', async () => {
+  const s = session; if (!s?.audio) return;
+  if (s.audio.microphoneActive) { s.audio.disableMicrophone(); micButton.setAttribute('aria-pressed', 'false'); micButton.title = 'Activează microfonul pentru suflat'; }
+  else {
+    micButton.disabled = true;
+    try {
+      await s.audio.enableMicrophone();
+      if (session !== s) return;
+      micButton.setAttribute('aria-pressed', String(s.audio.microphoneActive)); micButton.title = 'Oprește microfonul';
+      notice = 'Stai o secundă în liniște, apoi suflă spre telefon.'; noticeUntil = performance.now() + 3500;
+    } catch {
+      if (session !== s) return;
+      notice = 'Microfon indisponibil. Ține apăsat butonul cu flacără.'; noticeUntil = performance.now() + 4500;
+    } finally { if (session === s) micButton.disabled = false; }
+  }
+  micButton.setAttribute('aria-label', micButton.title);
+});
+soundButton.addEventListener('click', async () => {
+  const s = session; if (!s?.audio) return;
+  const enabled = soundButton.getAttribute('aria-pressed') !== 'true';
+  s.audio.setMuted(!enabled);
+  if (enabled) { try { await s.audio.unlock(); } catch {} }
+  if (session !== s) return;
+  soundButton.setAttribute('aria-pressed', String(enabled)); soundButton.title = enabled ? 'Oprește muzica' : 'Pornește muzica'; soundButton.setAttribute('aria-label', soundButton.title);
+});
+const endFire = () => { if (manualFire) burstUntil = performance.now() + 250; manualFire = false; };
+fireButton.addEventListener('pointerdown', event => {
+  if (!session || !showMask) return;
+  manualFire = true; fireButton.setPointerCapture(event.pointerId);
+});
+fireButton.addEventListener('pointerup', endFire); fireButton.addEventListener('pointercancel', endFire); fireButton.addEventListener('lostpointercapture', endFire);
+fireButton.addEventListener('keydown', event => { if ([' ', 'Enter'].includes(event.key)) { event.preventDefault(); manualFire = true; } });
+fireButton.addEventListener('keyup', event => { if ([' ', 'Enter'].includes(event.key)) { event.preventDefault(); endFire(); } });
+fireButton.addEventListener('blur', endFire);
+window.addEventListener('blur', () => { manualFire = false; burstUntil = 0; });
 window.addEventListener('resize', fit); video.addEventListener('resize', fit);
 window.addEventListener('pagehide', stop);
 document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });

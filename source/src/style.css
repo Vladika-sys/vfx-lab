@@ -97,3 +97,13 @@ button:disabled { opacity: .4; cursor: default; }
 .face-controls .slider { flex: 1; min-width: 35px; order: 0; }
 .face-controls input { width: 100%; }
 .face-controls button { flex-shrink: 0; }
+#face-atmosphere { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse var(--horror-rx, 260px) var(--horror-ry, 350px) at var(--horror-x, 50%) var(--horror-y, 45%), #08051000 5%, #08051026 55%, #08051099 100%); }
+#face-video.horror-active { filter: brightness(.82) saturate(.78); }
+#face-fire { touch-action: none; user-select: none; -webkit-user-select: none; }
+#face-fire[aria-pressed=true] { color: #ffc078; background: #ff7a221b; }
+#face-mic[aria-pressed=true], #face-sound[aria-pressed=true] { color: #eee; }
+#face-mic[aria-pressed=false], #face-sound[aria-pressed=false] { opacity: .5; }
+@media (max-width: 420px) {
+  .face-controls { gap: 6px; padding: 8px; }
+  .face-controls button { width: 30px; }
+}
