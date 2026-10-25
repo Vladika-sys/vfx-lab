@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "neutral_bounds_blender_meters": [
+    0.16256555914878845,
+    0.10163683071732521,
+    0.24425935000181198
+  ],
+  "embedded_images": 3,
+  "materials": 6,
+  "glb_bytes": 4098364,
+  "eye_openings": "clear",
+  "jaw_max_degrees": 16,
+  "note": "Potrivirea dinamica a barbiei este verificata separat prin testele JavaScript pe GLB."
+}

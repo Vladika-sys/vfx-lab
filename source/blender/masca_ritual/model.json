@@ -1,0 +1,24 @@
+{
+  "blend": "masca_ritual.blend",
+  "glb": "masca_ritual.glb",
+  "glb_bytes": 4098364,
+  "triangles": 51298,
+  "nodes": [
+    "Jaw",
+    "JawPivot",
+    "MaskShell",
+    "MouthLiner",
+    "MaskRoot"
+  ],
+  "materials": [
+    "Os ars \u2014 suprafata sculptata",
+    "EmberFissures",
+    "Fier oxidat \u2014 capse si nervuri",
+    "Sange coagulat \u2014 margini umede",
+    "Fildes patat",
+    "Interior carbonizat"
+  ],
+  "jaw_max_radians": 0.2792526803190927,
+  "units": "meters",
+  "coverage_overlap_cm": 0.2
+}

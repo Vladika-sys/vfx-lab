@@ -40,7 +40,3 @@ export function fitFacePose(matrixData, landmarks, reference, camera) {
   return new Matrix4().compose(translation, rotation, new Vector3(1, 1, 1));
 }
 
-export function jawAmount(categories) {
-  const value = categories?.find(category => category.categoryName === 'jawOpen')?.score;
-  return Number.isFinite(value) ? Math.min(1, Math.max(0, (value - .03) / .65)) : 0;
-}

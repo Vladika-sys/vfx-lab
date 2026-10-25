@@ -4,7 +4,7 @@ let task, files, model, backend = 'GPU', lastTime = -1;
 async function create(delegate) {
   return FaceLandmarker.createFromOptions(files, {
     baseOptions: { modelAssetBuffer: model, delegate }, canvas: new OffscreenCanvas(640, 480),
-    runningMode: 'VIDEO', numFaces: 1, outputFaceBlendshapes: true,
+    runningMode: 'VIDEO', numFaces: 1, outputFaceBlendshapes: false,
     outputFacialTransformationMatrixes: true,
     minFaceDetectionConfidence: .55, minFacePresenceConfidence: .55, minTrackingConfidence: .55,
   });
@@ -32,7 +32,6 @@ self.onmessage = async ({ data }) => {
       self.postMessage({ type: 'result', id: data.id, backend,
         landmarks: result.faceLandmarks[0] || null,
         matrix: result.facialTransformationMatrixes[0]?.data || null,
-        categories: result.faceBlendshapes[0]?.categories || [],
       });
     }
   } catch (failure) { self.postMessage({ type: 'error', error: failure.message || 'Urmărirea feței s-a întrerupt.' }); }

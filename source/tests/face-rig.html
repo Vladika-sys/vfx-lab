@@ -1,0 +1,61 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Ritual — verificare maxilar</title><style>
+body{margin:0;background:#171a1e;color:#ddd;font:14px system-ui}canvas{display:block;width:100vw;height:100vh}nav{position:fixed;top:15px;left:15px;padding:12px;background:#222d;border-radius:4px;max-width:380px}button{padding:8px;margin:4px;background:#444;color:#ddd;border:0;cursor:pointer}output{display:block;margin-top:8px;font-size:12px}
+</style></head><body><canvas id="stage"></canvas><nav>Probă geometrică — repere sintetice, nu cameră reală<br><button id="mouth">Deschide gura</button><button id="yaw">Semiprofil</button><button id="mask">Ascunde masca</button><output id="report">Se încarcă…</output></nav><script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createMaskRig, solveJawFit } from '/src/face-fit.js';
+import { createFaceGlow } from '/src/face-glow.js';
+const reference = await (await fetch('/assets/face/reference.json')).json();
+const { scene: model } = await new GLTFLoader().loadAsync('/assets/face/masca_ritual.glb');
+const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, 1000);
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('#stage'), alpha: true, antialias: true });
+renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const glow = createFaceGlow(renderer); glow.resize();
+const room = new RoomEnvironment(), generator = new THREE.PMREMGenerator(renderer); scene.environment = generator.fromScene(room, .04).texture; room.dispose(); generator.dispose();
+scene.add(new THREE.HemisphereLight(0xffebdd, 0x323b4b, 1.1));
+const key = new THREE.DirectionalLight(0xffddbb, 2); key.position.set(-20, 30, 40); scene.add(key);
+const rim = new THREE.DirectionalLight(0xff2410, 2); rim.position.set(20, 12, -15); scene.add(rim);
+const anchor = new THREE.Group(); anchor.matrixAutoUpdate = false; scene.add(anchor); anchor.add(model); model.scale.setScalar(100);
+const rig = createMaskRig(model), skin = new THREE.BufferGeometry();
+skin.setAttribute('position', new THREE.Float32BufferAttribute(reference.positions, 3)); skin.setIndex(reference.indices); skin.computeVertexNormals();
+const head = new THREE.Mesh(skin, new THREE.MeshStandardMaterial({ color: 0xcf977f, side: THREE.DoubleSide, roughness: .85 })); anchor.add(head);
+let open = false, yaw = 0, shown = true, previous = performance.now(), sampled = false;
+let landmarks, pose, facePositions;
+function sample() {
+  pose = new THREE.Matrix4().compose(new THREE.Vector3(0, -1, -48), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0)), new THREE.Vector3(1, 1, 1));
+  anchor.matrix.copy(pose); anchor.matrixWorldNeedsUpdate = true;
+  landmarks = []; facePositions = reference.positions.slice();
+  for (let i = 0; i < facePositions.length / 3; i++) {
+    const p = new THREE.Vector3().fromArray(facePositions, i * 3), weight = THREE.MathUtils.smoothstep(-p.y, 3.8, 9.2);
+    if (open) { p.y -= 2.2 * weight; p.z -= .3 * weight; }
+    if ([13, 14, 61, 291].includes(i)) p.z = 5.35;
+    if (i === 13) p.y = -4;
+    if (i === 14) p.y = open ? -6.35 : -4.04;
+    if (i === 152) p.z = reference.positions[i * 3 + 2];
+    p.toArray(facePositions, i * 3);
+    p.applyMatrix4(pose).project(camera); landmarks.push({ x: (p.x + 1) / 2, y: (1 - p.y) / 2 });
+  }
+  skin.attributes.position.array.set(facePositions); skin.attributes.position.needsUpdate = true; skin.computeVertexNormals();
+  rig.sample(solveJawFit({ landmarks, pose, camera, reference }), true); sampled = true;
+}
+document.querySelector('#mouth').onclick = event => { open = !open; event.target.textContent = open ? 'Închide gura' : 'Deschide gura'; sample(); };
+document.querySelector('#yaw').onclick = () => { yaw = yaw === 0 ? .55 : yaw > 0 ? -.55 : 0; sample(); };
+document.querySelector('#mask').onclick = event => { shown = !shown; model.visible = shown; event.target.textContent = shown ? 'Ascunde masca' : 'Arată masca'; };
+sample();
+function draw(now) {
+  const result = rig.update((now - previous) / 1000, now / 1000); previous = now;
+  scene.updateMatrixWorld(true);
+  const indices = [152, 148, 176, 150, 136, 377, 400, 379, 365, 13, 14];
+  let covered = 0, missed = [];
+  for (const index of indices) {
+    const local = new THREE.Vector3().fromArray(facePositions, index * 3), world = local.applyMatrix4(pose);
+    const ray = new THREE.Raycaster(new THREE.Vector3(), world.clone().normalize());
+    const hits = ray.intersectObject(model, true);
+    if (hits.length && hits[0].distance < world.length()) covered++; else missed.push(index);
+  }
+  document.querySelector('#report').textContent = `Maxilar: ${(result.angle * 180 / Math.PI).toFixed(1)}° · Acoperire gură/bărbie: ${covered}/${indices.length} repere${missed.length ? ' · Lipsesc: ' + missed.join(',') : ''}`;
+  glow.render(scene, camera); requestAnimationFrame(draw);
+}requestAnimationFrame(draw);
+</script></body></html>

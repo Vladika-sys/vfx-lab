@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createFaceTracker } from './face-tracking.js';
-import { fitFacePose, jawAmount } from './face-pose.js';
+import { fitFacePose } from './face-pose.js';
+import { createMaskRig, solveJawFit } from './face-fit.js';
+import { createFaceGlow } from './face-glow.js';
 import { createTrackedPose } from './image-pose.js';
 import { fitCameraCover } from './camera-cover.js';
 import './style.css';
@@ -38,12 +40,13 @@ function fit() {
   s.camera.projectionMatrix.copy(cover.projectionMatrix);
   s.camera.projectionMatrixInverse.copy(cover.projectionMatrix).invert();
   s.renderer.setSize(width, height, false);
+  s.glow.resize();
 }
 function stop() {
   generation++; pending?.abort(); pending = null;
   const s = session; session = null;
   if (s) {
-    cancelAnimationFrame(s.frame); s.tracker.close(); s.pose.reset();
+    cancelAnimationFrame(s.frame); s.tracker.close(); s.pose.reset(); s.rig.reset(); s.glow.dispose();
     disposeScene(s.scene); s.environment.dispose(); s.renderer.dispose();
   }
   video.srcObject?.getTracks().forEach(track => track.stop()); video.srcObject = null;
@@ -61,9 +64,9 @@ async function start() {
   const attempt = ++generation, abort = new AbortController(); pending = abort;
   const current = () => attempt === generation && !abort.signal.aborted;
   startButton.disabled = true; startButton.textContent = 'Pregătire…'; error.hidden = true;
-  let stream, tracker, renderer, scene, environment, owned = false;
+  let stream, tracker, renderer, scene, environment, glow, owned = false;
   const cleanup = () => {
-    tracker?.close(); disposeScene(scene); environment?.dispose(); renderer?.dispose();
+    tracker?.close(); glow?.dispose(); disposeScene(scene); environment?.dispose(); renderer?.dispose();
     stream?.getTracks().forEach(track => track.stop());
   };
   abort.signal.addEventListener('abort', () => { if (!owned) cleanup(); }, { once: true });
@@ -81,29 +84,34 @@ async function start() {
     const camera = new THREE.Camera(), fitCamera = new THREE.PerspectiveCamera(55, video.videoWidth / video.videoHeight, 1, 1000);
     const anchor = new THREE.Group(), modelGroup = new THREE.Group(); anchor.add(modelGroup); scene.add(anchor);
     const pose = createTrackedPose(anchor, { lossGraceMs: 100 });
-    let targetJaw = 0, jawValue = 0, lastResult = performance.now();
+    let lastResult = performance.now();
     const referenceResponse = await fetch(asset('reference.json'), { signal: abort.signal });
     if (!referenceResponse.ok) throw new Error('Reperul facial nu a putut fi încărcat.');
     const reference = await referenceResponse.json();
-    const modelResponse = await fetch(asset('masca_lemn.glb'), { signal: abort.signal });
+    const modelResponse = await fetch(asset('masca_ritual.glb'), { signal: abort.signal });
     if (!modelResponse.ok) throw new Error('Masca nu a putut fi încărcată.');
     const modelData = await modelResponse.arrayBuffer();
     const gltf = await new GLTFLoader().parseAsync(modelData, '');
     modelGroup.add(gltf.scene); gltf.scene.scale.setScalar(100);
     if (!current()) { cleanup(); return; }
-    const jaw = gltf.scene.getObjectByName('JawPivot');
-    if (!jaw) throw new Error('Articulația maxilarului lipsește din model.');
+    const rig = createMaskRig(gltf.scene);
     const occlusionGeometry = new THREE.BufferGeometry();
     occlusionGeometry.setAttribute('position', new THREE.Float32BufferAttribute(reference.positions, 3));
-    occlusionGeometry.setIndex(reference.indices);
+    const upperIndices = [];
+    for (let i = 0; i < reference.indices.length; i += 3) {
+      const triangle = reference.indices.slice(i, i + 3);
+      if (triangle.every(index => reference.positions[index * 3 + 1] > -2.7)) upperIndices.push(...triangle);
+    }
+    occlusionGeometry.setIndex(upperIndices);
     const depthMaterial = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, side: THREE.DoubleSide });
     const occluder = new THREE.Mesh(occlusionGeometry, depthMaterial); occluder.renderOrder = -1; anchor.add(occluder);
     const skull = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 20), depthMaterial);
-    skull.scale.set(6.6, 8.8, 5.7); skull.position.set(0, .5, -3.8); skull.renderOrder = -1; anchor.add(skull);
+    skull.scale.set(6.2, 7.0, 5.2); skull.position.set(0, 2, -4.2); skull.renderOrder = -1; anchor.add(skull);
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
+    glow = createFaceGlow(renderer);
     const generator = new THREE.PMREMGenerator(renderer), room = new RoomEnvironment();
     environment = generator.fromScene(room, .04); room.dispose(); generator.dispose(); scene.environment = environment.texture;
     scene.add(new THREE.HemisphereLight(0xfff5e5, 0x555a5c, 1.3));
@@ -115,13 +123,16 @@ async function start() {
         if (!current()) return;
         lastResult = performance.now();
         const matrix = fitFacePose(result.matrix, result.landmarks, reference, fitCamera);
-        if (matrix) { pose.sample(matrix); targetJaw = jawAmount(result.categories); }
-        else { pose.lose(); targetJaw = 0; }
+        if (matrix) {
+          const snap = !anchor.visible;
+          pose.sample(matrix);
+          rig.sample(solveJawFit({ landmarks: result.landmarks, pose: matrix, reference, camera: fitCamera }), snap);
+        } else pose.lose();
       },
       onError(failure) { if (current()) fail(failure); },
     });
     if (!current()) { cleanup(); return; }
-    session = { renderer, scene, environment, tracker, pose, fitCamera, camera, frame: 0 };
+    session = { renderer, scene, environment, tracker, pose, rig, glow, fitCamera, camera, frame: 0 };
     owned = true; pending = null; showMask = true;
     toggle.setAttribute('aria-pressed', 'true'); toggle.setAttribute('aria-label', 'Ascunde masca'); toggle.title = 'Ascunde masca';
     panel.hidden = true; canvas.hidden = toolbar.hidden = status.hidden = false; fit();
@@ -135,12 +146,13 @@ async function start() {
       }
       if (now - lastResult > 350) pose.lose();
       pose.update();
-      jawValue += (targetJaw - jawValue) * (1 - Math.exp(-20 * delta)); jaw.rotation.x = jawValue * .38397243544;
+      if (anchor.visible) rig.update(delta, now / 1000);
       modelGroup.scale.set(Number(widthControl.value) / 100, 1, 1);
       modelGroup.visible = showMask;
       status.hidden = anchor.visible;
       status.textContent = 'Privește camera, într-un loc bine luminat.';
-      renderer.render(scene, camera);
+      if (anchor.visible && showMask) glow.render(scene, camera);
+      else { renderer.setRenderTarget(null); renderer.render(scene, camera); }
     };
     session.frame = requestAnimationFrame(frame);
   } catch (failure) {
