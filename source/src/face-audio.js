@@ -11,6 +11,7 @@ export function createFaceAudio({
   const gate = createBreathGate();
   let closed = false, wanted = false, playing = null, musicError = null, muted = false, lastEnabled = null;
   let micGeneration = 0, micStream = null, micSource = null, analyser = null, silentSink = null, samples, spectrum;
+  let analysisAge = 0, features = null;
 
   function updateVolume() {
     output.gain.setTargetAtTime(wanted && !muted ? (micStream ? .04 : .25) : 0, context.currentTime, .16);
@@ -27,6 +28,7 @@ export function createFaceAudio({
     micGeneration++; micStream?.getTracks().forEach(track => track.stop()); micStream = null;
     micSource?.disconnect(); micSource = null; analyser?.disconnect(); analyser = null;
     silentSink?.disconnect(); silentSink = null; gate.reset();
+    analysisAge = 0; features = null;
     if (!closed) updateVolume();
   }
   return {
@@ -73,8 +75,12 @@ export function createFaceAudio({
     disableMicrophone,
     update(delta, eligible) {
       if (!analyser || closed || context.state !== 'running') return { level: 0, active: false, calibrated: false, signal: 0 };
-      analyser.getFloatTimeDomainData(samples); analyser.getFloatFrequencyData(spectrum);
-      return gate.update(breathFeatures(samples, spectrum, context.sampleRate, analyser.fftSize), delta, eligible);
+      analysisAge += delta;
+      if (!features || analysisAge >= .04) {
+        analyser.getFloatTimeDomainData(samples); analyser.getFloatFrequencyData(spectrum);
+        features = breathFeatures(samples, spectrum, context.sampleRate, analyser.fftSize); analysisAge = 0;
+      }
+      return gate.update(features, delta, eligible);
     },
     close() {
       if (closed) return;

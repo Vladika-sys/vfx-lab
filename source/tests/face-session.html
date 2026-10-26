@@ -58,6 +58,22 @@ Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { 
 const controls = document.createElement('div'); controls.style.cssText = 'position:fixed;top:10px;left:10px;font:12px system-ui;z-index:30;color:white;background:#222b;padding:5px';
 controls.innerHTML = '<span>Probă locală · fotografie NASA</span><button id="test-face" style="width:auto">Ascunde fața</button><button id="test-motion" style="width:auto">Mișcare</button><button id="test-tilt" style="width:auto">Înclină</button><button id="test-breath" style="width:auto">Suflat simulat</button><button id="test-voice" style="width:auto">Voce simulată</button><button id="test-deny" style="width:auto">Refuză microfonul</button><output id="test-stream"></output><br><output id="test-audio">Muzică: oprită</output><br><output id="test-mic"></output>';
 document.body.append(controls);
+const measure = document.createElement('button'), frameReport = document.createElement('output');
+measure.textContent = 'Măsoară cadrele'; measure.style.width = 'auto'; frameReport.id = 'test-frames';
+controls.append(measure, frameReport);
+measure.onclick = () => {
+  measure.disabled = true; frameReport.textContent = 'Măsurare…';
+  let start, previous; const intervals = [];
+  function sample(now) {
+    if (start === undefined) start = now;
+    if (previous !== undefined) intervals.push(now - previous); previous = now;
+    if (now - start < 5000) return requestAnimationFrame(sample);
+    const sorted = [...intervals].sort((a, b) => a - b);
+    frameReport.textContent = JSON.stringify({ fps: +(1000 * intervals.length / (now - start)).toFixed(1), p95: +sorted[Math.floor(sorted.length * .95)].toFixed(1), frames: intervals.length });
+    measure.disabled = false;
+  }
+  requestAnimationFrame(sample);
+};
 for (const [id, label, cutoff, gain] of [['test-weak', 'Suflat slab', 5000, .018], ['test-wind', 'Aer grav', 300, .09]]) {
   const button = document.createElement('button'); button.id = id; button.textContent = label; button.style.width = 'auto';
   button.onclick = () => { if (!noiseGain) return; lowpass.frequency.value = cutoff; noiseGain.gain.value = gain; voiceGain.gain.value = 0; };
@@ -83,4 +99,5 @@ setInterval(() => { document.querySelector('#test-mic').textContent = `Mic simul
 addEventListener('pagehide', () => { microphone?.getTracks().forEach(track => track.stop()); micContext?.close(); });
 const script = [...parsed.querySelectorAll('script[type="module"]')].find(element => element.getAttribute('src')?.includes('/assets/face-'));
 await import(/* @vite-ignore */ built ? new URL(script.getAttribute('src'), document.baseURI).href : '/src/face.js');
+document.body.dataset.ready = 'true';
 </script></body></html>

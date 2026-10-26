@@ -9,7 +9,8 @@ function fixture(getMicrophone = async () => ({ getTracks: () => [], getAudioTra
     resumes: 0, async resume() { this.resumes++; this.state = 'running'; }, close() { this.closed = true; return Promise.resolve(); },
     createGain() { const gain = { ...node(), gain: { value: 0, setTargetAtTime(value) { this.value = value; } } }; gains.push(gain); return gain; },
     createMediaElementSource: node, createMediaStreamSource: node,
-    createAnalyser() { return { ...node(), fftSize: 2048, frequencyBinCount: 1024, getFloatTimeDomainData(array) { array.fill(.003); }, getFloatFrequencyData(array) { array.fill(-60); } }; },
+    analyses: 0,
+    createAnalyser() { return { ...node(), fftSize: 2048, frequencyBinCount: 1024, getFloatTimeDomainData(array) { context.analyses++; array.fill(.003); }, getFloatFrequencyData(array) { array.fill(-60); } }; },
   };
   const music = { paused: true, calls: 0, async play() { this.paused = false; this.calls++; }, pause() { this.paused = true; }, removeAttribute() {}, load() {} };
   const sound = createFaceAudio({ src: '/music.mp3', contextFactory: () => context, audioFactory: () => music, getMicrophone });
@@ -66,4 +67,13 @@ test('a late music play promise cannot leave audio running after the session clo
   music.play = () => new Promise(resolve => { finish = () => { music.paused = false; resolve(); }; });
   const unlocking = sound.unlock(); sound.close(); finish(); await unlocking;
   assert.equal(music.paused, true);
+});
+
+test('high refresh displays do not repeat microphone analysis every display frame', async () => {
+  const track = { readyState: 'live', stop() { this.readyState = 'ended'; } };
+  const { sound, context } = fixture(async () => ({ getTracks: () => [track], getAudioTracks: () => [track] }));
+  await sound.enableMicrophone();
+  for (let i = 0; i < 120; i++) sound.update(1 / 120, true);
+  assert.ok(context.analyses >= 20 && context.analyses <= 26);
+  sound.close();
 });

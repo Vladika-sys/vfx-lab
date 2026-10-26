@@ -7,6 +7,7 @@ import { createMaskRig, solveJawFit } from './face-fit.js';
 import { createFaceGlow } from './face-glow.js';
 import { createMouthFire } from './face-fire.js';
 import { createFaceAudio } from './face-audio.js';
+import { createFaceQuality, facePixelRatio } from './face-quality.js';
 import { createTrackedPose } from './image-pose.js';
 import { fitCameraCover } from './camera-cover.js';
 import './style.css';
@@ -27,6 +28,7 @@ function disposeScene(scene) {
     for (const material of object.material ? [object.material].flat() : []) {
       materials.add(material);
       for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
+      for (const uniform of Object.values(material.uniforms || {})) if (uniform.value?.isTexture) textures.add(uniform.value);
     }
   });
   textures.forEach(texture => { texture.source?.data?.close?.(); texture.dispose(); });
@@ -43,6 +45,7 @@ function fit() {
   canvas.style.width = `${width}px`; canvas.style.height = `${height}px`;
   s.camera.projectionMatrix.copy(cover.projectionMatrix);
   s.camera.projectionMatrixInverse.copy(cover.projectionMatrix).invert();
+  s.renderer.setPixelRatio(facePixelRatio(width, height, window.devicePixelRatio) * s.quality.scale);
   s.renderer.setSize(width, height, false);
   s.glow.resize();
 }
@@ -119,7 +122,7 @@ async function start() {
     const skull = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 20), depthMaterial);
     skull.scale.set(6.2, 7.0, 5.2); skull.position.set(0, 2, -4.2); skull.renderOrder = -1; anchor.add(skull);
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(facePixelRatio(viewport.clientWidth, viewport.clientHeight, window.devicePixelRatio)); renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
     glow = createFaceGlow(renderer);
@@ -145,7 +148,7 @@ async function start() {
       onError(failure) { if (current()) fail(failure); },
     });
     if (!current()) { cleanup(); return; }
-    session = { renderer, scene, environment, tracker, pose, rig, glow, fire, audio, fitCamera, camera, frame: 0 };
+    session = { renderer, scene, environment, tracker, pose, rig, glow, fire, audio, fitCamera, camera, quality: createFaceQuality(), frame: 0 };
     owned = true; pending = null; showMask = true;
     toggle.setAttribute('aria-pressed', 'true'); toggle.setAttribute('aria-label', 'Ascunde masca'); toggle.title = 'Ascunde masca';
     micButton.disabled = soundButton.disabled = !audio;
@@ -157,7 +160,9 @@ async function start() {
     const frame = now => {
       if (!session || !current()) return;
       session.frame = requestAnimationFrame(frame);
-      const delta = Math.max(0, Math.min(.1, (now - previous) / 1000)); previous = now;
+      const elapsed = (now - previous) / 1000;
+      const delta = Math.max(0, Math.min(.1, elapsed)); previous = now;
+      if (session.quality.sample(elapsed)) fit();
       if (now - lastSubmitted > 40 && video.currentTime !== lastVideoTime && video.readyState >= 2) {
         lastSubmitted = now; lastVideoTime = video.currentTime; tracker.submit(video, now);
       }

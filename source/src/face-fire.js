@@ -1,46 +1,66 @@
 import * as THREE from 'three';
 
+function fireNoise() {
+  const size = 128, data = new Uint8Array(size * size * 4);
+  const hash = (x, y) => { const n = Math.sin((x & 31) * 127.1 + (y & 31) * 311.7) * 43758.5453; return n - Math.floor(n); };
+  const noise = (x, y) => {
+    const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+    const a = fx * fx * (3 - 2 * fx), b = fy * fy * (3 - 2 * fy);
+    return THREE.MathUtils.lerp(THREE.MathUtils.lerp(hash(ix, iy), hash(ix + 1, iy), a), THREE.MathUtils.lerp(hash(ix, iy + 1), hash(ix + 1, iy + 1), a), b);
+  };
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const i = (y * size + x) * 4;
+    data[i] = Math.round(noise(x / 4, y / 4) * 255);
+    data[i + 1] = Math.round(noise(x / 4 + 13, y / 4 + 19) * 255);
+    data[i + 2] = data[i]; data[i + 3] = 255;
+  }
+  const texture = new THREE.DataTexture(data, size, size);
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.minFilter = texture.magFilter = THREE.LinearFilter; texture.needsUpdate = true;
+  return texture;
+}
+
 export function createMouthFire() {
   const group = new THREE.Group(); group.name = 'MouthFire'; group.visible = false;
   const uniforms = { uTime: { value: 0 }, uPower: { value: 0 }, uGlowPass: { value: 0 }, uCamera: { value: new THREE.Vector3() } };
-  const material = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.BackSide,
-    uniforms, vertexShader: `varying vec3 vLocal;void main(){vLocal=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-    fragmentShader: `precision highp float;
-      uniform vec3 uCamera;uniform float uTime,uPower,uGlowPass;varying vec3 vLocal;
-      float hash(vec3 p){p=fract(p*.1031);p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}
-      float noise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
-        return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
-        mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
-      float fbm(vec3 p){return noise(p)*.62+noise(p*2.07+4.2)*.26+noise(p*4.11+8.7)*.12;}
-      float density(vec3 p){
-        float jetLength=11.+uPower*15.;float h=p.z/jetLength;
-        vec2 center=vec2(sin(p.z*.35-uTime*5.)*.075*p.z,-.23*p.z+sin(p.z*.43-uTime*3.)*.3);
-        float radius=(.42+pow(max(h,0.),.65)*(1.25+uPower*2.2))*(.8+.35*noise(vec3(p.z*.3,uTime*2.,3.)));
-        vec3 flow=vec3(p.xy*.78,p.z*.38-uTime*5.8);
-        float n=fbm(flow);float r=length(p.xy-center)/radius;
-        float body=1.-smoothstep(.08,1.15,r+(n-.5)*1.3);
-        return body*smoothstep(.38,.70,n)*smoothstep(-.08,.04,h)*(1.-smoothstep(.55,1.,h))*uPower;
-      }
+  uniforms.uNoise = { value: fireNoise() };
+  const material = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms, vertexShader: `
+      attribute vec3 seed;uniform float uTime,uPower;varying vec2 vUv;varying float vAge,vSeed;
       void main(){
-        vec3 ray=normalize(vLocal-uCamera),inv=1./ray;
-        vec3 a=(vec3(-8.,-13.,0.)-uCamera)*inv,b=(vec3(8.,8.,31.)-uCamera)*inv;
-        vec3 lo=min(a,b),hi=max(a,b);float near=max(0.,max(max(lo.x,lo.y),lo.z));float far=min(min(hi.x,hi.y),hi.z);
-        if(far<=near)discard;float stepSize=(far-near)/36.;vec4 sum=vec4(0.);
-        vec3 p=uCamera+ray*(near+stepSize*.5);
-        for(int i=0;i<36;i++){
-          float d=density(p);float alpha=1.-exp(-d*stepSize*.38);
-          float heat=clamp(d*1.05+(1.-p.z/(11.+uPower*15.))*.12,0.,1.);
-          vec3 color=mix(vec3(.85,.035,.001),vec3(2.6,.38,.012),smoothstep(.08,.64,heat));
-          color=mix(color,vec3(3.4,1.35,.16),smoothstep(.80,1.,heat));
-          sum.rgb+=(1.-sum.a)*color*alpha;sum.a+=(1.-sum.a)*alpha;
-          if(sum.a>.97)break;p+=ray*stepSize;
-        }
-        if(sum.a<.005)discard;gl_FragColor=vec4(sum.rgb/max(sum.a,.001)*mix(1.,.22,uGlowPass),sum.a);
+        vUv=uv;vAge=fract(seed.x+uTime*(1.35+seed.y*.35));vSeed=seed.z;
+        float z=vAge*(11.+uPower*15.);
+        vec3 center=vec3(sin(z*.45-uTime*5.+seed.z*3.)*vAge*1.2,-.23*z+sin(z*.6+seed.y*9.)*vAge*.7,z);
+        vec4 mv=modelViewMatrix*vec4(center,1.);
+        float diameter=(1.1+vAge*(5.+uPower*3.))*(.8+seed.y*.4);
+        float angle=seed.z*6.28+uTime*.4;
+        mat2 turn=mat2(cos(angle),-sin(angle),sin(angle),cos(angle));
+        mv.xy+=turn*(position.xy*vec2(diameter,diameter*1.4));
+        gl_Position=projectionMatrix*mv;
+      }`,
+    fragmentShader: `
+      uniform sampler2D uNoise;uniform float uTime,uPower,uGlowPass;
+      varying vec2 vUv;varying float vAge,vSeed;
+      void main(){
+        vec2 q=vUv*2.-1.;float edge=1.-dot(q,q);if(edge<=0.)discard;
+        vec2 flow=vUv*.23+vec2(vSeed,uTime*-.25);
+        float coarse=texture2D(uNoise,flow).r;
+        float fine=texture2D(uNoise,flow*2.7+vec2(uTime*.06,0.)).g;
+        float body=smoothstep(.02,.7,edge+(coarse-.5)*.9)*smoothstep(.22,.65,coarse*.7+fine*.3);
+        float alpha=body*.21*uPower*smoothstep(0.,.05,vAge)*(1.-smoothstep(.55,1.,vAge));
+        if(alpha<.003)discard;
+        float heat=clamp((1.-vAge)*.65+body*.35,0.,1.);
+        vec3 color=mix(vec3(1.4,.045,.001),vec3(2.8,.62,.025),heat);
+        color=mix(color,vec3(3.1,1.5,.24),smoothstep(.8,1.,heat));
+        gl_FragColor=vec4(color*mix(1.,.22,uGlowPass),alpha);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
   });
-  const geometry = new THREE.BoxGeometry(16, 21, 31); geometry.translate(0, -2.5, 15.5);
+  const plane = new THREE.PlaneGeometry(1, 1), geometry = new THREE.InstancedBufferGeometry();
+  geometry.index = plane.index; geometry.attributes = plane.attributes; geometry.instanceCount = 24;
+  const layers = Float32Array.from({ length: 24 * 3 }, (_, i) => i % 3 === 0 ? Math.floor(i / 3) / 24 : ((Math.sin(i * 127.1 + 31.7) * 43758.5453) % 1 + 1) % 1);
+  geometry.setAttribute('seed', new THREE.InstancedBufferAttribute(layers, 3));
   const flame = new THREE.Mesh(geometry, material); flame.frustumCulled = false; flame.renderOrder = 5;
   flame.userData.selectiveGlow = 'self'; group.add(flame);
   const light = new THREE.PointLight(0xff6b19, 0, 45, 1.4); light.position.set(0, -1, 7); group.add(light);
