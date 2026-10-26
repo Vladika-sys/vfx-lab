@@ -6,6 +6,7 @@ import { fitFacePose } from './face-pose.js';
 import { createMaskRig, solveJawFit } from './face-fit.js';
 import { createFaceGlow } from './face-glow.js';
 import { createMouthFire } from './face-fire.js';
+import { createRedEyes } from './face-eyes.js';
 import { createFaceAudio } from './face-audio.js';
 import { createFaceQuality, facePixelRatio } from './face-quality.js';
 import { createTrackedPose } from './image-pose.js';
@@ -96,6 +97,7 @@ async function start() {
     const camera = new THREE.Camera(), fitCamera = new THREE.PerspectiveCamera(55, video.videoWidth / video.videoHeight, 1, 1000);
     const anchor = new THREE.Group(), modelGroup = new THREE.Group(); anchor.add(modelGroup); scene.add(anchor);
     const fire = createMouthFire(); modelGroup.add(fire.group);
+    const eyes = createRedEyes(); anchor.add(eyes.group);
     const pose = createTrackedPose(anchor, { lossGraceMs: 100 });
     let lastResult = performance.now(), latestFit = null;
     const mouth = new THREE.Vector3(0, -4.2, 7.4), center = new THREE.Vector3(), edge = new THREE.Vector3();
@@ -142,6 +144,7 @@ async function start() {
           pose.sample(matrix);
           latestFit = solveJawFit({ landmarks: result.landmarks, pose: matrix, reference, camera: fitCamera });
           rig.sample(latestFit, snap);
+          eyes.sample(result.landmarks, matrix, fitCamera, snap);
           if (latestFit?.mouth) mouth.copy(latestFit.mouth);
         } else pose.lose();
       },
@@ -172,6 +175,7 @@ async function start() {
       modelGroup.scale.set(Number(widthControl.value) / 100, 1, 1);
       modelGroup.visible = showMask;
       const active = anchor.visible && showMask;
+      eyes.update(delta, now / 1000, active);
       const breath = audio?.update(delta, active) || { level: 0, signal: 0 };
       micButton.style.setProperty('--mic-level', String(breath.signal || 0));
       const micActive = Boolean(audio?.microphoneActive), micPaused = Boolean(audio?.microphonePaused);
