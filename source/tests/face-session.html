@@ -19,7 +19,7 @@ function draw(now = 0) {
   requestAnimationFrame(draw);
 }
 draw();
-let stream, microphone, micContext, noiseGain, voiceGain, denyMicrophone = false;
+let stream, microphone, micContext, noiseGain, voiceGain, lowpass, denyMicrophone = false;
 let measuredContext = null;
 const NativeContext = window.AudioContext;
 window.AudioContext = class extends NativeContext {
@@ -48,7 +48,7 @@ async function fakeMicrophone() {
   for (let i = 0; i < data.length; i++) { seed = (seed * 1664525 + 1013904223) >>> 0; data[i] = seed / 2147483648 - 1; }
   const noise = micContext.createBufferSource(); noise.buffer = buffer; noise.loop = true;
   noiseGain = micContext.createGain(); noiseGain.gain.value = 0;
-  const lowpass = micContext.createBiquadFilter(); lowpass.type = 'lowpass'; lowpass.frequency.value = 5000;
+  lowpass = micContext.createBiquadFilter(); lowpass.type = 'lowpass'; lowpass.frequency.value = 5000;
   noise.connect(lowpass); lowpass.connect(noiseGain); noiseGain.connect(destination); noise.start();
   const voice = micContext.createOscillator(); voice.type = 'sawtooth'; voice.frequency.value = 220;
   voiceGain = micContext.createGain(); voiceGain.gain.value = 0; voice.connect(voiceGain); voiceGain.connect(destination); voice.start();
@@ -58,11 +58,17 @@ Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { 
 const controls = document.createElement('div'); controls.style.cssText = 'position:fixed;top:10px;left:10px;font:12px system-ui;z-index:30;color:white;background:#222b;padding:5px';
 controls.innerHTML = '<span>Probă locală · fotografie NASA</span><button id="test-face" style="width:auto">Ascunde fața</button><button id="test-motion" style="width:auto">Mișcare</button><button id="test-tilt" style="width:auto">Înclină</button><button id="test-breath" style="width:auto">Suflat simulat</button><button id="test-voice" style="width:auto">Voce simulată</button><button id="test-deny" style="width:auto">Refuză microfonul</button><output id="test-stream"></output><br><output id="test-audio">Muzică: oprită</output><br><output id="test-mic"></output>';
 document.body.append(controls);
+for (const [id, label, cutoff, gain] of [['test-weak', 'Suflat slab', 5000, .018], ['test-wind', 'Aer grav', 300, .09]]) {
+  const button = document.createElement('button'); button.id = id; button.textContent = label; button.style.width = 'auto';
+  button.onclick = () => { if (!noiseGain) return; lowpass.frequency.value = cutoff; noiseGain.gain.value = gain; voiceGain.gain.value = 0; };
+  controls.append(button);
+}
 document.querySelector('#test-face').onclick = event => { visible = !visible; event.target.textContent = visible ? 'Ascunde fața' : 'Arată fața'; };
 document.querySelector('#test-motion').onclick = event => { moving = !moving; event.target.textContent = moving ? 'Oprește mișcarea' : 'Mișcare'; };
 document.querySelector('#test-tilt').onclick = () => { tilt = !tilt; };
 document.querySelector('#test-breath').onclick = event => {
   if (!noiseGain) return; const active = noiseGain.gain.value === 0;
+  lowpass.frequency.value = 5000;
   noiseGain.gain.value = active ? .28 : 0; voiceGain.gain.value = 0;
   event.target.textContent = active ? 'Oprește suflatul' : 'Suflat simulat';
 };

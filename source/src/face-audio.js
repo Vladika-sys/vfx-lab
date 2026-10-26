@@ -10,7 +10,11 @@ export function createFaceAudio({
   output.gain.value = 0;
   const gate = createBreathGate();
   let closed = false, wanted = false, playing = null, musicError = null, muted = false, lastEnabled = null;
-  let micGeneration = 0, micStream = null, micSource = null, analyser = null, samples, spectrum;
+  let micGeneration = 0, micStream = null, micSource = null, analyser = null, silentSink = null, samples, spectrum;
+
+  function updateVolume() {
+    output.gain.setTargetAtTime(wanted && !muted ? (micStream ? .04 : .25) : 0, context.currentTime, .16);
+  }
 
   function play() {
     if (closed || playing || !music.paused) return playing || Promise.resolve();
@@ -21,7 +25,9 @@ export function createFaceAudio({
   }
   function disableMicrophone() {
     micGeneration++; micStream?.getTracks().forEach(track => track.stop()); micStream = null;
-    micSource?.disconnect(); micSource = null; analyser?.disconnect(); analyser = null; gate.reset();
+    micSource?.disconnect(); micSource = null; analyser?.disconnect(); analyser = null;
+    silentSink?.disconnect(); silentSink = null; gate.reset();
+    if (!closed) updateVolume();
   }
   return {
     async unlock() {
@@ -36,32 +42,37 @@ export function createFaceAudio({
       const enabled = wanted && !muted;
       if (enabled === lastEnabled) return;
       lastEnabled = enabled;
-      output.gain.setTargetAtTime(enabled ? .25 : 0, context.currentTime, .16);
+      updateVolume();
       if (!enabled) music.pause(); else if (!musicError) play();
     },
     setMuted(value) { muted = value; this.setActive(wanted); },
     get muted() { return muted; },
     get musicError() { return musicError || music.error; },
     get microphoneActive() { return Boolean(micStream?.getAudioTracks().some(track => track.readyState === 'live')); },
+    get microphonePaused() { return Boolean(micStream && context.state !== 'running'); },
+    async resumeMicrophone() { if (!closed && micStream) await context.resume(); },
     async enableMicrophone() {
       if (closed || micStream) return;
       const attempt = ++micGeneration;
       await context.resume();
       if (closed || attempt !== micGeneration) return;
       const stream = await getMicrophone({ video: false, audio: {
-        echoCancellation: true, noiseSuppression: false, autoGainControl: false, channelCount: 1,
+        echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1,
       } });
       if (closed || attempt !== micGeneration) { stream.getTracks().forEach(track => track.stop()); return; }
       try {
         micStream = stream; micSource = context.createMediaStreamSource(stream); analyser = context.createAnalyser();
         analyser.fftSize = 2048; analyser.smoothingTimeConstant = .05; micSource.connect(analyser);
+        silentSink = context.createGain(); silentSink.gain.value = 0;
+        analyser.connect(silentSink); silentSink.connect(context.destination);
         samples = new Float32Array(analyser.fftSize); spectrum = new Float32Array(analyser.frequencyBinCount);
-        gate.reset();
+        gate.reset(); updateVolume();
+        await context.resume();
       } catch (error) { disableMicrophone(); throw error; }
     },
     disableMicrophone,
     update(delta, eligible) {
-      if (!analyser || closed || context.state !== 'running') return { level: 0, active: false, calibrated: false };
+      if (!analyser || closed || context.state !== 'running') return { level: 0, active: false, calibrated: false, signal: 0 };
       analyser.getFloatTimeDomainData(samples); analyser.getFloatFrequencyData(spectrum);
       return gate.update(breathFeatures(samples, spectrum, context.sampleRate, analyser.fftSize), delta, eligible);
     },

@@ -167,7 +167,13 @@ async function start() {
       modelGroup.scale.set(Number(widthControl.value) / 100, 1, 1);
       modelGroup.visible = showMask;
       const active = anchor.visible && showMask;
-      const breath = audio?.update(delta, active && latestFit?.mouthRatio > .035) || { level: 0 };
+      const breath = audio?.update(delta, active) || { level: 0, signal: 0 };
+      micButton.style.setProperty('--mic-level', String(breath.signal || 0));
+      const micActive = Boolean(audio?.microphoneActive), micPaused = Boolean(audio?.microphonePaused);
+      micButton.setAttribute('aria-pressed', String(micActive));
+      micButton.dataset.state = !micActive ? 'off' : micPaused ? 'paused' : !breath.calibrated ? 'calibrating' : 'listening';
+      const micLabel = !micActive ? 'Activează microfonul pentru suflat' : micPaused ? 'Microfon întrerupt — apasă pentru reluare' : !breath.calibrated ? 'Calibrare — păstrează liniștea o secundă' : 'Microfon activ — suflă spre marginea de jos a telefonului. Apasă pentru oprire';
+      if (micButton.title !== micLabel) { micButton.title = micLabel; micButton.setAttribute('aria-label', micLabel); }
       const desired = active ? Math.max(breath.level, manualFire || now < burstUntil ? 1 : 0) : 0;
       const power = fire.update(delta, now / 1000, desired, mouth);
       if (!active) { fire.reset(); manualFire = false; burstUntil = 0; }
@@ -187,8 +193,8 @@ async function start() {
         atmosphere.style.setProperty('--horror-y', `${(1 - center.y) * height / 2}px`);
         atmosphere.style.setProperty('--horror-rx', `${radius * 1.3}px`); atmosphere.style.setProperty('--horror-ry', `${radius * 1.65}px`);
       }
-      status.hidden = anchor.visible && now > noticeUntil;
-      status.textContent = now < noticeUntil ? notice : 'Privește camera, într-un loc bine luminat.';
+      status.hidden = anchor.visible && now > noticeUntil && !micPaused;
+      status.textContent = now < noticeUntil ? notice : micPaused ? 'Microfon întrerupt. Apasă pictograma pentru reluare.' : 'Privește camera, într-un loc bine luminat.';
       if (anchor.visible && showMask) glow.render(scene, camera);
       else { renderer.setRenderTarget(null); renderer.render(scene, camera); }
     };
@@ -207,14 +213,15 @@ toggle.addEventListener('click', () => {
 });
 micButton.addEventListener('click', async () => {
   const s = session; if (!s?.audio) return;
-  if (s.audio.microphoneActive) { s.audio.disableMicrophone(); micButton.setAttribute('aria-pressed', 'false'); micButton.title = 'Activează microfonul pentru suflat'; }
+  if (s.audio.microphoneActive && !s.audio.microphonePaused) { s.audio.disableMicrophone(); micButton.setAttribute('aria-pressed', 'false'); micButton.title = 'Activează microfonul pentru suflat'; }
   else {
     micButton.disabled = true;
     try {
-      await s.audio.enableMicrophone();
+      if (s.audio.microphoneActive) await s.audio.resumeMicrophone();
+      else await s.audio.enableMicrophone();
       if (session !== s) return;
       micButton.setAttribute('aria-pressed', String(s.audio.microphoneActive)); micButton.title = 'Oprește microfonul';
-      notice = 'Stai o secundă în liniște, apoi suflă spre telefon.'; noticeUntil = performance.now() + 3500;
+      notice = 'O secundă de liniște, apoi suflă spre marginea de jos a telefonului. Bara arată sunetul primit.'; noticeUntil = performance.now() + 5000;
     } catch {
       if (session !== s) return;
       notice = 'Microfon indisponibil. Ține apăsat butonul cu flacără.'; noticeUntil = performance.now() + 4500;
